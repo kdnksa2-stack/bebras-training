@@ -1,0 +1,16 @@
+# اختياري: فقط لمن يستخدم Wrangler من سطر الأوامر بدل لوحة Cloudflare.
+# النشر:  npx wrangler deploy
+# المفتاح: npx wrangler secret put ANTHROPIC_API_KEY   (أو GEMINI_API_KEY)
+name = "bebras-chat"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# ضع رابط موقعك على GitHub Pages (بدون مسار وبدون / في النهاية)، وافصل بفاصلة
+ALLOWED_ORIGINS = "https://YOUR-USERNAME.github.io,http://localhost:8000"
+
+# حدّ الرسائل في الدقيقة لكل مستخدم (مجاني). احذف هذا القسم إذا لا تريده.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }

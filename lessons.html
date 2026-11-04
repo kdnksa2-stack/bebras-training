@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الدروس | بيبراس موهبة</title>
+<meta name="description" content="دروس قصيرة ومبسطة في مهارات التفكير الحاسوبي لمسابقة بيبراس.">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="wrap" id="main"><p class="muted">جارٍ التحميل…</p></main>
+<footer id="site-footer"></footer>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/figures.js"></script>
+<script>
+(async function () {
+  const main = document.getElementById('main');
+  const { esc, fmt } = App;
+  const Q_LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ'];
+  try {
+    const skills = await App.skills();
+    const id = App.param('id');
+    const p = App.progress.get();
+
+    if (!id) {
+      document.title = 'الدروس | بيبراس موهبة';
+      main.innerHTML = `<h1 class="page-title">📘 الدروس</h1>
+        <p class="lead">كل درس يُقرأ في 3 إلى 5 دقائق: شرح بسيط، مثال من الحياة، مثال محلول على طريقة بيبراس، خلاصة، واختبار قصير.</p>
+        <div class="grid grid-3">${skills.map((s, i) => `
+          <a class="card skill-card" href="lessons.html?id=${s.id}"><span class="ic">${s.icon}</span>
+            <div><h3>${i + 1}. ${esc(s.title)}</h3><p>${esc(s.desc)}</p>
+            <p style="margin-top:6px">${p.lessons[s.id] ? '<span class="badge done">✓ مكتمل</span>' : '<span class="badge">لم يكتمل</span>'}</p></div></a>`).join('')}
+        </div>`;
+      return;
+    }
+
+    const idx = skills.findIndex((s) => s.id === id);
+    if (idx < 0) { main.innerHTML = '<div class="notice err">الدرس غير موجود. <a href="lessons.html">كل الدروس</a></div>'; return; }
+    const sk = skills[idx];
+    const data = await App.json(`data/skills/${id}.json`);
+    const L = data.lesson;
+    document.title = `${sk.title} | الدروس`;
+    const prev = skills[idx - 1], next = skills[idx + 1];
+
+    main.innerHTML = `<article class="lesson">
+      <p class="no-print"><a href="lessons.html">← كل الدروس</a></p>
+      <h1 class="page-title">${sk.icon} ${esc(sk.title)}</h1>
+      <p class="muted">⏱️ مدة القراءة: ${L.minutes} دقائق ${p.lessons[id] ? '• <span class="badge done">✓ أكملت هذا الدرس</span>' : ''}</p>
+      <div class="btn-row no-print">
+        <button class="btn secondary small" type="button" onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+        <a class="btn secondary small" href="summaries.html?id=${id}">📝 الملخص</a>
+        <a class="btn secondary small" href="bank.html?skill=${id}">🧩 أسئلة هذه المهارة</a>
+      </div>
+      <p class="lead">${fmt(L.intro)}</p>
+      ${(L.terms || []).map((t) => `<div class="term"><strong>${esc(t.t)}:</strong> ${fmt(t.d)}</div>`).join('')}
+      ${(L.sections || []).map((s) => `<section><h2>${esc(s.h)}</h2><p>${fmt(s.p)}</p>${Fig.render(s.figure)}</section>`).join('')}
+      <section class="box"><h2>🏠 مثال من الحياة اليومية</h2><p>${fmt(L.daily.text)}</p>${Fig.render(L.daily.figure)}</section>
+      <section class="box"><h2>🦫 مثال محلول على طريقة بيبراس</h2>
+        <p>${fmt(L.solved.story)}</p>${Fig.render(L.solved.figure)}
+        <p class="q-ask"><strong>السؤال:</strong> ${fmt(L.solved.question)}</p>
+        <button class="btn small no-print" type="button" id="show-solved">اعرض الحل</button>
+        <div id="solved" class="solved-body"><h3>الحل:</h3><ol class="steps">${L.solved.steps.map((s) => `<li>${fmt(s)}</li>`).join('')}</ol>
+          ${Fig.render(L.solved.answerFigure)}
+          <p><strong>✅ الجواب:</strong> ${fmt(L.solved.answer)}</p></div>
+      </section>
+      <section class="keypoints"><h2 style="margin-top:0">⭐ الخلاصة في 3 نقاط</h2><ol>${L.keypoints.map((k) => `<li>${fmt(k)}</li>`).join('')}</ol></section>
+      <section class="box no-print" id="mini"><h2>✏️ اختبر نفسك (3 أسئلة)</h2>
+        ${L.quiz.map((q, qi) => `<div class="mini-q" data-qi="${qi}"><p><strong>${qi + 1}.</strong> ${fmt(q.q)}</p>
+          <div class="opts">${q.options.map((o, oi) => `<button type="button" class="opt" data-oi="${oi}"><span class="l">${Q_LETTERS[oi]}</span><span>${fmt(o)}</span></button>`).join('')}</div>
+          <div class="fb"></div></div>`).join('')}
+        <div id="mini-result"></div>
+      </section>
+      <div class="btn-row no-print" style="justify-content:space-between">
+        ${prev ? `<a class="btn secondary" href="lessons.html?id=${prev.id}">→ ${esc(prev.title)}</a>` : '<span></span>'}
+        ${next ? `<a class="btn" href="lessons.html?id=${next.id}">${esc(next.title)} ←</a>` : '<a class="btn" href="quizzes.html">إلى الاختبارات ←</a>'}
+      </div>
+    </article>`;
+
+    const solved = document.getElementById('solved');
+    solved.hidden = true;
+    document.getElementById('show-solved').addEventListener('click', (e) => { solved.hidden = false; e.target.remove(); });
+    // في الطباعة يظهر الحل دائمًا
+    window.addEventListener('beforeprint', () => { solved.hidden = false; });
+
+    const answered = {};
+    document.querySelectorAll('.mini-q').forEach((box) => {
+      const qi = Number(box.dataset.qi), q = L.quiz[qi];
+      box.querySelectorAll('.opt').forEach((b) => b.addEventListener('click', () => {
+        if (answered[qi] !== undefined) return;
+        const oi = Number(b.dataset.oi);
+        answered[qi] = oi === q.answer;
+        box.querySelectorAll('.opt').forEach((x, k) => { x.classList.toggle('right', k === q.answer); x.classList.toggle('wrong', k === oi && oi !== q.answer); });
+        box.querySelector('.fb').innerHTML = `<div class="feedback ${answered[qi] ? 'ok' : 'no'}">${answered[qi] ? '✓ صحيح!' : '✗ ليست هذه.'} ${fmt(q.explain || '')}</div>`;
+        if (Object.keys(answered).length === L.quiz.length) {
+          const score = Object.values(answered).filter(Boolean).length;
+          App.progress.markLesson(id);
+          document.getElementById('mini-result').innerHTML = `<div class="notice">نتيجتك: <strong>${score} من ${L.quiz.length}</strong>. ${score === L.quiz.length ? '🌟 ممتاز! أكملت الدرس.' : 'تم حفظ الدرس كمكتمل. راجع الخلاصة ثم جرّب أسئلة المهارة في بنك الأسئلة.'}</div>`;
+        }
+      }));
+    });
+  } catch (e) { App.loadError(main, e); }
+})();
+</script>
+</body>
+</html>

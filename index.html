@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>وهية ببراس تدريب و الفائدة</title>
+<meta name="description" content="موقع عربي مجاني للتدريب على مسابقة بيبراس موهبة للتفكير الحاسوبي: دروس مبسطة، ملخصات للطباعة، بنك أسئلة، اختبارات تفاعلية، ومساعد ذكي.">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="wrap">
+  <section class="hero">
+    <div>
+      <h1>تدرّب على بيبراس موهبة 🦫</h1>
+      <p class="lead">تعلّم التفكير الحاسوبي خطوة بخطوة: دروس قصيرة، أسئلة على نمط بيبراس مع حلولها، واختبارات تقيس مستواك. مجانًا، وبدون تسجيل.</p>
+      <div class="btn-row">
+        <a class="btn accent" href="lessons.html">ابدأ أول درس</a>
+        <a class="btn secondary" href="quizzes.html">جرّب اختبارًا</a>
+      </div>
+    </div>
+    <div class="card" id="progress-box"><p class="muted">جارٍ تحميل تقدّمك…</p></div>
+  </section>
+
+  <h2>الأقسام</h2>
+  <div class="big-links">
+    <a class="big-link" href="about.html"><span class="ic">ℹ️</span><strong>عن المسابقة</strong><span>ما هي بيبراس؟ ولمن؟ وكيف يكون الاختبار؟</span></a>
+    <a class="big-link" href="lessons.html"><span class="ic">📘</span><strong>الدروس</strong><span>12 مهارة، كل درس من 3 إلى 5 دقائق</span></a>
+    <a class="big-link" href="summaries.html"><span class="ic">📝</span><strong>الملخصات</strong><span>صفحة واحدة لكل مهارة جاهزة للطباعة</span></a>
+    <a class="big-link" href="bank.html"><span class="ic">🧩</span><strong>بنك الأسئلة</strong><span>80 سؤالًا أصليًا مع التلميح والحل</span></a>
+    <a class="big-link" href="quizzes.html"><span class="ic">⏱️</span><strong>الاختبارات</strong><span>اختبارات جاهزة، ومولّد اختبار حسب اختيارك</span></a>
+    <a class="big-link" href="chat.html"><span class="ic">🤖</span><strong>المساعد الذكي</strong><span>اسأل عن أي مسألة أو درس</span></a>
+  </div>
+
+  <h2>ابدأ حسب صفّك</h2>
+  <div class="grid grid-4" id="levels"></div>
+
+  <h2>المهارات</h2>
+  <div class="grid grid-3" id="skills"></div>
+</main>
+<footer id="site-footer"></footer>
+<script src="assets/js/core.js"></script>
+<script>
+(async function () {
+  const box = document.getElementById('progress-box');
+  try {
+    const [skills, qs, quizzes] = await Promise.all([App.skills(), App.questions(), App.json('data/quizzes.json')]);
+    const p = App.progress.get();
+    const ld = skills.filter((s) => p.lessons[s.id]).length;
+    const sd = qs.filter((q) => p.solved[q.id]).length;
+    const qd = quizzes.filter((z) => p.quizzes[z.id]).length;
+    const pct = Math.round(((ld / skills.length) + (sd / qs.length) + (qd / quizzes.length)) / 3 * 100);
+    box.innerHTML = `<h3 style="margin-top:0">📈 تقدّمك</h3>
+      <div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>
+      <p style="margin:.4em 0 .8em"><strong>${pct}%</strong> من المحتوى</p>
+      <div class="stats">
+        <div class="stat"><div class="num">${ld}/${skills.length}</div><div class="muted">درس مكتمل</div></div>
+        <div class="stat"><div class="num">${sd}/${qs.length}</div><div class="muted">سؤال محلول</div></div>
+        <div class="stat"><div class="num">${qd}/${quizzes.length}</div><div class="muted">اختبار منجز</div></div>
+      </div>
+      <button class="btn ghost small" id="reset" type="button">مسح التقدّم</button>`;
+    document.getElementById('reset').addEventListener('click', () => {
+      App.ask('هل تريد مسح كل تقدّمك المحفوظ في هذا الجهاز؟', { yes: 'مسح', no: 'إلغاء' }).then((ok) => { if (ok) { App.progress.reset(); location.reload(); } });
+    });
+
+    document.getElementById('levels').innerHTML = Object.entries(App.LEVELS).map(([id, name]) => {
+      const n = qs.filter((q) => q.level === id).length;
+      const z = quizzes.filter((x) => x.level === id);
+      return `<div class="card"><h3 style="margin-top:0">${name}</h3><p class="muted">${n} سؤالًا • ${z.length} اختبارات</p>
+        <div class="btn-row"><a class="btn small" href="bank.html?level=${id}">الأسئلة</a>${z[0] ? `<a class="btn small secondary" href="quizzes.html?id=${z[0].id}">اختبار</a>` : ''}</div></div>`;
+    }).join('');
+
+    document.getElementById('skills').innerHTML = skills.map((s) => `
+      <a class="card skill-card" href="lessons.html?id=${s.id}"><span class="ic">${s.icon}</span>
+        <div><h3>${App.esc(s.title)} ${p.lessons[s.id] ? '<span class="badge done">✓ مكتمل</span>' : ''}</h3><p>${App.esc(s.desc)}</p></div></a>`).join('');
+  } catch (e) { App.loadError(box, e); }
+})();
+</script>
+</body>
+</html>

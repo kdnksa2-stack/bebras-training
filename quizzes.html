@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الاختبارات | بيبراس موهبة</title>
+<meta name="description" content="اختبارات تفاعلية على نمط بيبراس مع تصحيح تلقائي ومراجعة الأخطاء، وقابلة للطباعة بتنسيق A4.">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="wrap" id="main"><p class="muted">جارٍ التحميل…</p></main>
+<footer id="site-footer"></footer>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/figures.js"></script>
+<script src="assets/js/questions.js"></script>
+<script>
+(async function () {
+  const main = document.getElementById('main');
+  const { esc } = App;
+  let ALL, QUIZZES, SKILLS, SKILLMAP;
+  let S = null; // حالة الاختبار الجاري
+
+  try {
+    [ALL, QUIZZES, SKILLS, SKILLMAP] = await Promise.all([App.questions(), App.json('data/quizzes.json'), App.skills(), App.skillMap()]);
+  } catch (e) { App.loadError(main, e); return; }
+  const byId = {};
+  ALL.forEach((q) => { byId[q.id] = q; });
+
+  function quizFromDef(def) {
+    const qs = def.questions.map((id) => byId[id]).filter(Boolean);
+    return { ...def, qs: App.sortByDifficulty(qs) };
+  }
+
+  /* ---------- القائمة + المولّد ---------- */
+  function showList() {
+    stopTimer();
+    window.onbeforeunload = null;
+    const p = App.progress.get();
+    const groups = Object.entries(App.LEVELS).map(([lv, name]) => {
+      const zs = QUIZZES.filter((z) => z.level === lv);
+      return `<h2>${name}</h2><div class="grid grid-2">${zs.map((z) => {
+        const r = p.quizzes[z.id];
+        return `<div class="card"><h3 style="margin-top:0">${esc(z.title)}</h3><p class="muted" style="margin:0">${esc(z.desc || '')}</p>
+          <p style="margin:.4em 0">${z.questions.length} سؤالًا ${r ? `• <span class="badge done">أفضل نتيجة: ${r.best}/${r.total}</span>` : ''}</p>
+          <div class="btn-row"><a class="btn small" href="quizzes.html?id=${z.id}">ابدأ</a>
+          <button class="btn small secondary" type="button" data-print="${z.id}">🖨️ طباعة</button></div></div>`;
+      }).join('')}</div>`;
+    }).join('');
+    main.innerHTML = `<h1 class="page-title">⏱️ الاختبارات</h1>
+      <p class="lead">اختبارات متدرجة الصعوبة لكل فئة. حلّها هنا مع تصحيح فوري، أو اطبعها على ورق A4.</p>
+      <section class="card" id="gen"><h2 style="margin-top:0">🛠️ مولّد اختبار مخصص</h2>
+        <div class="form-row"><label>الفئة: <select id="g-level"><option value="">كل الفئات</option>${Object.entries(App.LEVELS).map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></label>
+          <label>عدد الأسئلة: <input type="number" id="g-count" min="3" max="40" value="10" style="width:90px"></label></div>
+        <p style="margin:.6em 0 .2em"><strong>الصعوبة:</strong></p>
+        <div class="checks">${Object.entries(App.DIFFS).map(([v, t]) => `<label><input type="checkbox" class="g-diff" value="${v}" checked> ${t}</label>`).join('')}</div>
+        <p style="margin:.6em 0 .2em"><strong>المهارات:</strong> <button type="button" class="btn ghost small" id="g-all">تحديد/إلغاء الكل</button></p>
+        <div class="checks">${SKILLS.map((s) => `<label><input type="checkbox" class="g-skill" value="${s.id}" checked> ${s.icon} ${esc(s.title)}</label>`).join('')}</div>
+        <div class="btn-row"><button class="btn accent" type="button" id="g-go">أنشئ الاختبار</button><button class="btn secondary" type="button" id="g-print">🖨️ أنشئ واطبع</button></div>
+        <div id="g-msg"></div>
+      </section>
+      ${groups}`;
+    main.querySelectorAll('[data-print]').forEach((b) => b.addEventListener('click', () => printDialog(quizFromDef(QUIZZES.find((z) => z.id === b.dataset.print)))));
+    document.getElementById('g-all').addEventListener('click', () => {
+      const boxes = [...document.querySelectorAll('.g-skill')];
+      const on = !boxes.every((b) => b.checked);
+      boxes.forEach((b) => { b.checked = on; });
+    });
+    const build = () => {
+      const lv = document.getElementById('g-level').value;
+      const diffs = [...document.querySelectorAll('.g-diff:checked')].map((b) => b.value);
+      const sks = [...document.querySelectorAll('.g-skill:checked')].map((b) => b.value);
+      const n = Math.max(3, Math.min(40, Number(document.getElementById('g-count').value) || 10));
+      const pool = ALL.filter((q) => (!lv || q.level === lv) && diffs.includes(q.difficulty) && sks.includes(q.skill));
+      const msg = document.getElementById('g-msg');
+      if (!pool.length) { msg.innerHTML = '<div class="notice err">لا توجد أسئلة بهذه الاختيارات. وسّع الاختيار.</div>'; return null; }
+      msg.innerHTML = pool.length < n ? `<div class="notice warn">المتاح ${pool.length} سؤالًا فقط، فاستخدمناها كلها.</div>` : '';
+      const qs = App.sortByDifficulty(App.shuffle(pool).slice(0, n));
+      return { id: 'custom', title: 'اختبار مخصص', level: lv, desc: '', qs };
+    };
+    document.getElementById('g-go').addEventListener('click', () => { const z = build(); if (z) showIntro(z); });
+    document.getElementById('g-print').addEventListener('click', () => { const z = build(); if (z) printDialog(z); });
+  }
+
+  /* ---------- قبل البدء ---------- */
+  function showIntro(z) {
+    stopTimer();
+    window.scrollTo(0, 0);
+    const sk = [...new Set(z.qs.map((q) => q.skill))].map((s) => SKILLMAP[s] && SKILLMAP[s].icon + ' ' + SKILLMAP[s].title).join(' • ');
+    main.innerHTML = `<p><a href="quizzes.html">← كل الاختبارات</a></p>
+      <div class="card"><h1 style="margin-top:0">${esc(z.title)}</h1>
+        <p>${z.level ? `<span class="badge lvl">${App.LEVELS[z.level]}</span> ` : ''}<span class="badge">${z.qs.length} سؤالًا</span> <span class="badge">من السهل إلى الصعب</span></p>
+        <p class="muted">${esc(sk)}</p>
+        <div class="form-row"><label>⏱️ الوقت:
+          <select id="t-min"><option value="0" selected>بدون وقت (على راحتك)</option>${[10, 15, 20, 30, 45, 60].map((m) => `<option value="${m}">${m} دقيقة</option>`).join('')}</select></label></div>
+        <ul class="muted"><li>تقدر تتنقل بين الأسئلة بحرية.</li><li>استخدم 🚩 «أرجع له لاحقًا» للأسئلة التي تريد العودة لها.</li><li>التصحيح يكون في النهاية، ثم تراجع أخطاءك مع الحل.</li></ul>
+        <div class="btn-row"><button class="btn accent" id="start" type="button">ابدأ الاختبار</button>
+          <button class="btn secondary" type="button" id="pr">🖨️ طباعة / حفظ PDF</button></div></div>`;
+    document.getElementById('start').addEventListener('click', () => start(z, Number(document.getElementById('t-min').value)));
+    document.getElementById('pr').addEventListener('click', () => printDialog(z));
+  }
+
+  /* ---------- تشغيل الاختبار ---------- */
+  function start(z, minutes) {
+    S = { z, resp: z.qs.map(() => undefined), flags: z.qs.map(() => false), cur: 0, endAt: minutes > 0 ? Date.now() + minutes * 60000 : null, timer: null };
+    window.onbeforeunload = () => 'الاختبار لم ينتهِ بعد.';
+    main.innerHTML = `<div class="quiz-bar">
+        <strong>${esc(z.title)}</strong>
+        <span class="timer" id="timer">${S.endAt ? '' : '∞ بدون وقت'}</span>
+        <span class="muted" id="pos"></span>
+        <button class="btn small accent" type="button" id="finish" style="margin-inline-start:auto">إنهاء وتصحيح</button>
+      </div>
+      <div class="qnav" id="qnav"></div>
+      <div id="qbox"></div>
+      <div class="btn-row" style="justify-content:space-between">
+        <button class="btn secondary" type="button" id="prev">→ السابق</button>
+        <button class="btn secondary" type="button" id="flag">🚩 أرجع له لاحقًا</button>
+        <button class="btn" type="button" id="next">التالي ←</button>
+      </div>`;
+    document.getElementById('prev').addEventListener('click', () => go(S.cur - 1));
+    document.getElementById('next').addEventListener('click', () => go(S.cur + 1));
+    document.getElementById('flag').addEventListener('click', () => { S.flags[S.cur] = !S.flags[S.cur]; drawNav(); });
+    document.getElementById('finish').addEventListener('click', () => {
+      const left = S.resp.filter((r, i) => !Q.isAnswered(S.z.qs[i], r)).length;
+      const flagged = S.flags.filter(Boolean).length;
+      let msg = 'هل تريد إنهاء الاختبار والتصحيح؟';
+      if (left) msg += `\nباقي ${left} سؤال بدون إجابة.`;
+      if (flagged) msg += `\nعندك ${flagged} سؤال عليه علامة «أرجع له لاحقًا».`;
+      App.ask(msg, { yes: 'إنهاء وتصحيح', no: 'رجوع' }).then((ok) => { if (ok) finish(); });
+    });
+    if (S.endAt) { tick(); S.timer = setInterval(tick, 1000); }
+    go(0);
+  }
+  function tick() {
+    const ms = S.endAt - Date.now();
+    const el = document.getElementById('timer');
+    if (ms <= 0) { stopTimer(); finish(); App.ask('⏰ انتهى الوقت! تم تصحيح الاختبار.', { yes: 'حسنًا', no: '' }); return; }
+    const m = Math.floor(ms / 60000), s = Math.floor((ms % 60000) / 1000);
+    if (el) { el.textContent = `⏱️ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; el.classList.toggle('low', ms < 60000); }
+  }
+  function stopTimer() { if (S && S.timer) { clearInterval(S.timer); S.timer = null; } }
+  function drawNav(results) {
+    document.getElementById('qnav').innerHTML = S.z.qs.map((q, i) => {
+      const cls = results ? (results[i] ? 'right' : 'wrong') : [Q.isAnswered(q, S.resp[i]) ? 'ans' : '', S.flags[i] ? 'flag' : '', i === S.cur ? 'cur' : ''].join(' ');
+      return `<button type="button" class="${cls}" data-i="${i}" aria-label="سؤال ${i + 1}">${i + 1}</button>`;
+    }).join('');
+    document.querySelectorAll('#qnav button').forEach((b) => b.addEventListener('click', () => (results ? reviewOne(Number(b.dataset.i), results) : go(Number(b.dataset.i)))));
+  }
+  function go(i) {
+    if (i < 0 || i >= S.z.qs.length) return;
+    S.cur = i;
+    const q = S.z.qs[i];
+    Q.mount(q, document.getElementById('qbox'), {
+      mode: 'exam', number: i + 1, skills: SKILLMAP, response: S.resp[i],
+      onChange: (r) => { S.resp[i] = (r && typeof r === 'object' && !Array.isArray(r)) ? { ...r } : (Array.isArray(r) ? [...r] : r); drawNav(); },
+    });
+    document.getElementById('pos').textContent = `سؤال ${i + 1} من ${S.z.qs.length}`;
+    document.getElementById('prev').disabled = i === 0;
+    document.getElementById('next').disabled = i === S.z.qs.length - 1;
+    document.getElementById('flag').textContent = S.flags[i] ? '✅ أزل علامة الرجوع' : '🚩 أرجع له لاحقًا';
+    drawNav();
+  }
+
+  /* ---------- النتيجة والمراجعة ---------- */
+  function finish() {
+    stopTimer();
+    window.onbeforeunload = null;
+    const results = S.z.qs.map((q, i) => Q.isCorrect(q, S.resp[i]));
+    const score = results.filter(Boolean).length, total = results.length;
+    if (S.z.id !== 'custom') App.progress.saveQuiz(S.z.id, score, total);
+    S.z.qs.forEach((q, i) => { if (results[i]) App.progress.markSolved(q.id); });
+    const pct = Math.round((score / total) * 100);
+    const msg = pct >= 85 ? '🌟 ممتاز! مستواك قوي جدًا.' : pct >= 60 ? '👏 جيد جدًا! راجع أخطاءك لتصل للقمة.' : pct >= 40 ? '💪 بداية جيدة. راجع الحلول ثم أعد المحاولة.' : '📘 لا بأس! اقرأ دروس المهارات التي أخطأت فيها ثم جرّب مرة ثانية.';
+    const wrongSkills = [...new Set(S.z.qs.filter((q, i) => !results[i]).map((q) => q.skill))];
+    window.scrollTo(0, 0);
+    main.innerHTML = `<div class="card center"><h1 style="margin-top:0">نتيجتك</h1>
+        <p class="score-big">${score} / ${total}</p><p><strong>${pct}%</strong></p><p>${msg}</p>
+        <div class="btn-row" style="justify-content:center">
+          <button class="btn" type="button" id="rv-wrong" ${score === total ? 'disabled' : ''}>راجع الأخطاء</button>
+          <button class="btn secondary" type="button" id="rv-all">راجع كل الأسئلة</button>
+          <button class="btn secondary" type="button" id="again">أعد الاختبار</button>
+          <button class="btn secondary" type="button" id="pr">🖨️ طباعة</button>
+          <a class="btn ghost" href="quizzes.html">كل الاختبارات</a>
+        </div></div>
+      ${wrongSkills.length ? `<div class="notice">📘 دروس مقترحة للمراجعة: ${wrongSkills.map((s) => `<a href="lessons.html?id=${s}">${SKILLMAP[s].icon} ${esc(SKILLMAP[s].title)}</a>`).join(' • ')}</div>` : ''}
+      <p class="muted">اضغط على رقم أي سؤال لمراجعته:</p>
+      <div class="qnav" id="qnav"></div>
+      <div id="review"></div>`;
+    drawNav(results);
+    document.getElementById('rv-wrong').addEventListener('click', () => reviewList(results, true));
+    document.getElementById('rv-all').addEventListener('click', () => reviewList(results, false));
+    document.getElementById('again').addEventListener('click', () => showIntro(S.z));
+    document.getElementById('pr').addEventListener('click', () => printDialog(S.z));
+  }
+  function reviewList(results, onlyWrong) {
+    const box = document.getElementById('review');
+    box.innerHTML = '';
+    S.z.qs.forEach((q, i) => {
+      if (onlyWrong && results[i]) return;
+      const d = document.createElement('div');
+      d.className = 'review-item';
+      box.appendChild(d);
+      Q.mount(q, d, { mode: 'review', number: i + 1, skills: SKILLMAP, response: S.resp[i] });
+    });
+    box.scrollIntoView({ behavior: 'smooth' });
+  }
+  function reviewOne(i, results) {
+    const box = document.getElementById('review');
+    box.innerHTML = '<div class="review-item"></div>';
+    Q.mount(S.z.qs[i], box.firstChild, { mode: 'review', number: i + 1, skills: SKILLMAP, response: S.resp[i] });
+    box.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /* ---------- الطباعة ---------- */
+  function printDialog(z) {
+    let dlg = document.getElementById('print-dlg');
+    if (dlg) dlg.remove();
+    dlg = document.createElement('div');
+    dlg.id = 'print-dlg';
+    dlg.className = 'card no-print';
+    dlg.style.cssText = 'position:fixed;inset-inline:16px;bottom:16px;z-index:100;max-width:520px;margin-inline:auto';
+    dlg.innerHTML = `<h3 style="margin-top:0">🖨️ طباعة: ${esc(z.title)}</h3>
+      <div class="checks" style="flex-direction:column">
+        <label><input type="checkbox" id="p-key" checked> إضافة مفتاح الإجابات (في صفحة منفصلة)</label>
+        <label><input type="checkbox" id="p-steps"> إضافة خطوات الحل في المفتاح</label>
+        <label><input type="checkbox" id="p-space" checked> مساحة للحل تحت كل سؤال</label>
+      </div>
+      <div class="btn-row"><button class="btn" type="button" id="p-go">اطبع / احفظ PDF</button><button class="btn secondary" type="button" id="p-x">إلغاء</button></div>`;
+    document.body.appendChild(dlg);
+    document.getElementById('p-x').addEventListener('click', () => dlg.remove());
+    document.getElementById('p-go').addEventListener('click', () => {
+      const key = document.getElementById('p-key').checked, steps = document.getElementById('p-steps').checked, space = document.getElementById('p-space').checked;
+      dlg.remove();
+      App.printHTML(`<div class="paper-head"><h1>${esc(z.title)} — بيبراس موهبة</h1>
+          <div class="meta"><span>${z.level ? App.LEVELS[z.level] : 'كل الفئات'}</span><span>عدد الأسئلة: ${z.qs.length}</span><span>الدرجة: ........ / ${z.qs.length}</span></div>
+          <div class="paper-fields"><div>الاسم:</div><div>الصف:</div><div>التاريخ:</div></div></div>
+        ${z.qs.map((q, i) => Q.printHTML(q, i + 1, space)).join('')}
+        ${key ? Q.answerKeyHTML(z.qs, steps) : ''}`);
+    });
+  }
+
+  const id = App.param('id');
+  if (id) {
+    const def = QUIZZES.find((z) => z.id === id);
+    if (def) showIntro(quizFromDef(def)); else showList();
+  } else showList();
+})();
+</script>
+</body>
+</html>

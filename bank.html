@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بنك الأسئلة | بيبراس موهبة</title>
+<meta name="description" content="بنك أسئلة أصلية على نمط بيبراس مع تلميحات وحلول خطوة بخطوة، مع فلترة حسب الفئة والمهارة والصعوبة.">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="wrap">
+  <h1 class="page-title">🧩 بنك الأسئلة</h1>
+  <p class="lead">أسئلة أصلية على نمط بيبراس. افتح السؤال، فكّر، واستخدم التلميح إذا احتجت، ثم تحقق من إجابتك واقرأ الحل.</p>
+  <div class="filters card" role="search">
+    <input type="search" id="f-text" class="full" placeholder="🔎 ابحث بكلمة (مثل: روبوت، مكدس، أقصر طريق)" aria-label="بحث">
+    <select id="f-level" aria-label="الفئة"><option value="">كل الفئات</option></select>
+    <select id="f-skill" aria-label="المهارة"><option value="">كل المهارات</option></select>
+    <select id="f-diff" aria-label="الصعوبة"><option value="">كل الصعوبات</option></select>
+    <select id="f-type" aria-label="نوع السؤال"><option value="">كل الأنواع</option></select>
+  </div>
+  <div class="form-row"><span id="count" class="muted"></span>
+    <label><input type="checkbox" id="f-unsolved"> غير المحلولة فقط</label>
+    <button type="button" class="btn small secondary" id="print-sel">🖨️ طباعة النتائج كورقة عمل</button>
+  </div>
+  <div class="q-list" id="list"><p class="muted">جارٍ التحميل…</p></div>
+</main>
+<footer id="site-footer"></footer>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/figures.js"></script>
+<script src="assets/js/questions.js"></script>
+<script>
+(async function () {
+  const list = document.getElementById('list');
+  const { esc } = App;
+  const $ = (id) => document.getElementById(id);
+  try {
+    const [all, skillsArr, skills] = await Promise.all([App.questions(), App.skills(), App.skillMap()]);
+    const fill = (sel, entries) => { sel.insertAdjacentHTML('beforeend', entries.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')); };
+    fill($('f-level'), Object.entries(App.LEVELS));
+    fill($('f-skill'), skillsArr.map((s) => [s.id, s.icon + ' ' + s.title]));
+    fill($('f-diff'), Object.entries(App.DIFFS));
+    fill($('f-type'), Object.entries(App.TYPES));
+    ['level', 'skill', 'difficulty', 'type'].forEach((k) => {
+      const v = App.param(k);
+      const el = $({ level: 'f-level', skill: 'f-skill', difficulty: 'f-diff', type: 'f-type' }[k]);
+      if (v) el.value = v;
+    });
+
+    let current = [];
+    function apply() {
+      const p = App.progress.get();
+      const txt = Q.norm($('f-text').value);
+      current = all.filter((q) =>
+        (!$('f-level').value || q.level === $('f-level').value) &&
+        (!$('f-skill').value || q.skill === $('f-skill').value) &&
+        (!$('f-diff').value || q.difficulty === $('f-diff').value) &&
+        (!$('f-type').value || q.type === $('f-type').value) &&
+        (!$('f-unsolved').checked || !p.solved[q.id]) &&
+        (!txt || Q.norm([q.title, q.story, q.question].join(' ')).includes(txt)));
+      $('count').textContent = `${current.length} سؤال`;
+      list.innerHTML = current.length ? current.map((q) => `
+        <details class="q-item" data-id="${q.id}"><summary>
+          <span class="ttl">${p.solved[q.id] ? '✅ ' : ''}${esc(q.title)}</span>${Q.badges(q, skills)}
+        </summary><div class="q-body"></div></details>`).join('') : '<div class="notice">لا توجد أسئلة بهذه الشروط. جرّب تغيير الفلاتر.</div>';
+    }
+    list.addEventListener('toggle', (e) => {
+      const d = e.target;
+      if (!d.open || d.dataset.mounted) return;
+      d.dataset.mounted = '1';
+      const q = all.find((x) => x.id === d.dataset.id);
+      Q.mount(q, d.querySelector('.q-body'), {
+        mode: 'practice', skills,
+        onSolved: () => { const t = d.querySelector('.ttl'); if (!t.textContent.startsWith('✅')) t.textContent = '✅ ' + t.textContent; },
+      });
+    }, true);
+    ['f-level', 'f-skill', 'f-diff', 'f-type', 'f-unsolved'].forEach((id) => $(id).addEventListener('change', apply));
+    $('f-text').addEventListener('input', apply);
+    $('print-sel').addEventListener('click', async () => {
+      if (!current.length) return;
+      const withKey = await App.ask('هل تريد إضافة مفتاح الإجابات في صفحة منفصلة؟', { yes: 'نعم، مع المفتاح', no: 'بدون مفتاح' });
+      App.printHTML(`<div class="paper-head"><h1>ورقة عمل — بيبراس موهبة</h1>
+          <div class="paper-fields"><div>الاسم:</div><div>الصف:</div><div>التاريخ:</div></div></div>
+        ${current.map((q, i) => Q.printHTML(q, i + 1)).join('')}
+        ${withKey ? Q.answerKeyHTML(current, true) : ''}`);
+    });
+    apply();
+    // فتح سؤال محدد من الرابط: bank.html?q=g34-01
+    const qid = App.param('q');
+    if (qid) { const d = list.querySelector(`[data-id="${CSS.escape(qid)}"]`); if (d) { d.open = true; d.scrollIntoView(); } }
+  } catch (e) { App.loadError(list, e); }
+})();
+</script>
+</body>
+</html>
