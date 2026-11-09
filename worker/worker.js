@@ -13,7 +13,7 @@
 /* ======================= الإعدادات (عدّل هنا فقط) ======================= */
 const CONFIG = {
   // المزود: "claude" أو "gemini"  (ويمكن تغييره بدون تعديل الكود بإضافة Variable اسمه PROVIDER)
-  provider: 'claude',
+  provider: 'gemini',
 
   claude: {
     model: 'claude-opus-5-5',
@@ -28,9 +28,17 @@ const CONFIG = {
   },
 
   gemini: {
-    model: 'gemini-2.5-flash',
-    temperature: 0.2, // منخفضة لإجابات أدق وأثبت
-    maxOutputTokens: 4096,
+    // gemini-2.5-flash لم يعد متاحًا للحسابات الجديدة.
+    // يُجرَّب النموذج الأول، وإذا كان مشغولًا (503/429) يُجرَّب التالي.
+    // (3.8-flash كان يعلق أكثر من دقيقتين في الطبقة المجانية، لذلك هو احتياطي فقط)
+    models: ['gemini-3.5-flash', 'gemini-3.8-flash'],
+    timeoutMs: 45000, // أقصى انتظار لكل محاولة قبل الانتقال للتالي
+    // عمق التفكير قبل الرد: 'low' أسرع، 'medium' متوازن، 'high' أدق وأبطأ. null = افتراضي النموذج
+    thinkingLevel: 'low',
+    // نماذج Gemini 3 تعمل أفضل مع temperature الافتراضية (1.0)؛ القيم المنخفضة قد تسبب تكرارًا.
+    // الدقة هنا تأتي من «التفكير» الداخلي للنموذج. اتركها null لاستخدام الافتراضي.
+    temperature: null,
+    maxOutputTokens: 8192, // تشمل رموز التفكير
   },
 
   limits: {
@@ -231,12 +239,34 @@ async function callGemini(messages, env) {
   const body = {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-    generationConfig: { temperature: g.temperature, maxOutputTokens: g.maxOutputTokens },
+    generationConfig: { maxOutputTokens: g.maxOutputTokens },
     safetySettings: cats.map((category) => ({ category, threshold: 'BLOCK_LOW_AND_ABOVE' })),
   };
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(g.model)}:generateContent`;
-  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(body) });
-  if (!r.ok) throw new Error(`gemini ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  if (typeof g.temperature === 'number') body.generationConfig.temperature = g.temperature;
+  if (g.thinkingLevel) body.generationConfig.thinkingConfig = { thinkingLevel: g.thinkingLevel };
+  const payload = JSON.stringify(body);
+  let r, lastErr = '';
+  // جرّب كل نموذج، مع إعادة محاولة واحدة عند الانشغال
+  outer: for (const model of g.models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+      const t0 = Date.now();
+      try {
+        r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: payload, signal: AbortSignal.timeout(g.timeoutMs) });
+      } catch (e) {
+        r = null;
+        lastErr = `gemini ${model} timeout/network: ${e && e.message}`;
+        console.log(`gemini ${model} try ${attempt + 1}: ${lastErr} after ${Date.now() - t0}ms`);
+        break; // النموذج عالق: لا تعِد المحاولة عليه، انتقل للتالي
+      }
+      console.log(`gemini ${model} try ${attempt + 1}: ${r.status} in ${Date.now() - t0}ms`);
+      if (r.ok) break outer;
+      lastErr = `gemini ${model} ${r.status}: ${(await r.text()).slice(0, 300)}`;
+      if (![429, 500, 503, 524].includes(r.status)) break; // خطأ غير مؤقت: انتقل للنموذج التالي
+      if (attempt === 0) await new Promise((res) => setTimeout(res, 800));
+    }
+  }
+  if (!r || !r.ok) throw new Error(lastErr);
   const data = await r.json();
   const cand = (data.candidates || [])[0];
   if (!cand || cand.finishReason === 'SAFETY' || (data.promptFeedback && data.promptFeedback.blockReason)) {
