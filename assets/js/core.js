@@ -98,7 +98,7 @@
       header.className = 'site-header';
       header.innerHTML = `
         <div class="wrap">
-          <a class="brand" href="index.html"><span class="logo" aria-hidden="true">🦫</span>بيبراس موهبة</a>
+          <a class="brand" href="index.html"><span class="logo" aria-hidden="true">🦫</span>بيبراس تدريب موهبة</a>
           <nav class="nav" id="nav" aria-label="القائمة الرئيسية">
             ${NAV.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}
           </nav>
@@ -119,7 +119,18 @@
     const footer = document.getElementById('site-footer');
     if (footer) {
       footer.className = 'site-footer';
-      footer.innerHTML = `<div class="wrap">موقع تعليمي مجاني غير رسمي للتدريب على التفكير الحاسوبي • الأسئلة من تأليف الموقع وليست أسئلة رسمية • للتسجيل والمواعيد: <a href="https://bebrasksa.org" target="_blank" rel="noopener">bebrasksa.org</a><br>تقدّمك يُحفظ في جهازك فقط، ولا نجمع أي بيانات شخصية.</div>`;
+      const official = [
+        ['موهبة', 'https://www.mawhiba.sa'],
+        ['بيبراس موهبة (الموقع الرسمي)', 'https://bebrasksa.org'],
+        ['بيبراس العالمية', 'https://www.bebras.org'],
+        ['وزارة التعليم', 'https://moe.gov.sa'],
+      ];
+      footer.innerHTML = `<div class="wrap">
+        <nav class="footer-links" aria-label="مواقع رسمية"><span class="footer-label">مواقع رسمية:</span>
+          ${official.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join('')}</nav>
+        <p class="footer-note">موقع تعليمي مجاني غير رسمي للتدريب على التفكير الحاسوبي • الأسئلة من تأليف الموقع وليست أسئلة رسمية • للتسجيل والمواعيد: <a href="https://bebrasksa.org" target="_blank" rel="noopener">bebrasksa.org</a><br>تقدّمك يُحفظ في جهازك فقط، ولا نجمع أي بيانات شخصية.</p>
+        <p class="footer-credit">إعداد وتصميم <span class="creator">أحمد أيمن الغامدي</span></p>
+      </div>`;
     }
   }
 

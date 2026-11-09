@@ -84,6 +84,13 @@ code { font-family: Consolas, "Courier New", monospace; background: var(--surfac
 
 main { padding: 18px 0 40px; min-height: 70vh; }
 .site-footer { border-top: 1px solid var(--border); padding: 20px 0; color: var(--muted); font-size: .9rem; text-align: center; }
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; margin-bottom: 12px; }
+.footer-label { font-weight: 700; }
+.footer-links a { display: inline-block; padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); text-decoration: none; }
+.footer-links a:hover { border-color: currentColor; }
+.footer-note { margin: 0 0 14px; }
+.footer-credit { margin: 0; font-size: 1rem; }
+.footer-credit .creator { font-family: 'Aref Ruqaa', 'Tajawal', serif; font-weight: 700; font-size: 1.6rem; color: var(--text, inherit); margin-inline-start: .3em; line-height: 1.6; }
 
 /* ===== عناصر عامة ===== */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }

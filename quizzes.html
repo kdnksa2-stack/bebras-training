@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>الاختبارات | بيبراس موهبة</title>
+<title>الاختبارات | بيبراس تدريب موهبة</title>
 <meta name="description" content="اختبارات تفاعلية على نمط بيبراس مع تصحيح تلقائي ومراجعة الأخطاء، وقابلة للطباعة بتنسيق A4.">
 <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
 </head>
@@ -235,7 +235,7 @@
     document.getElementById('p-go').addEventListener('click', () => {
       const key = document.getElementById('p-key').checked, steps = document.getElementById('p-steps').checked, space = document.getElementById('p-space').checked;
       dlg.remove();
-      App.printHTML(`<div class="paper-head"><h1>${esc(z.title)} — بيبراس موهبة</h1>
+      App.printHTML(`<div class="paper-head"><h1>${esc(z.title)} — بيبراس تدريب موهبة</h1>
           <div class="meta"><span>${z.level ? App.LEVELS[z.level] : 'كل الفئات'}</span><span>عدد الأسئلة: ${z.qs.length}</span><span>الدرجة: ........ / ${z.qs.length}</span></div>
           <div class="paper-fields"><div>الاسم:</div><div>الصف:</div><div>التاريخ:</div></div></div>
         ${z.qs.map((q, i) => Q.printHTML(q, i + 1, space)).join('')}

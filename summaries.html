@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>الملخصات | بيبراس موهبة</title>
+<title>الملخصات | بيبراس تدريب موهبة</title>
 <meta name="description" content="ملخص من صفحة واحدة لكل مهارة من مهارات التفكير الحاسوبي، جاهز للطباعة.">
 <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
 </head>
@@ -32,7 +32,7 @@
         <div><h2>⚠️ أخطاء شائعة</h2><ul>${S.mistakes.map((t) => `<li>${fmt(t)}</li>`).join('')}</ul></div>
       </div>
       <h2>✏️ مثال صغير</h2><p>${fmt(S.example.text)}</p>${Fig.render(S.example.figure)}
-      <p class="muted print-only" style="font-size:.8rem;margin-top:10px">بيبراس موهبة — موقع تدريبي غير رسمي • bebrasksa.org</p>
+      <p class="muted print-only" style="font-size:.8rem;margin-top:10px">بيبراس تدريب موهبة — موقع تدريبي غير رسمي • bebrasksa.org</p>
     </article>`;
   }
 
@@ -50,7 +50,7 @@
     const list = id === 'all' ? skills : skills.filter((s) => s.id === id);
     if (!list.length) { main.innerHTML = '<div class="notice err">الملخص غير موجود. <a href="summaries.html">كل الملخصات</a></div>'; return; }
     const datas = await Promise.all(list.map((s) => App.json(`data/skills/${s.id}.json`)));
-    document.title = (id === 'all' ? 'كل الملخصات' : 'ملخص ' + list[0].title) + ' | بيبراس موهبة';
+    document.title = (id === 'all' ? 'كل الملخصات' : 'ملخص ' + list[0].title) + ' | بيبراس تدريب موهبة';
     main.innerHTML = `<div class="btn-row no-print">
         <a class="btn secondary small" href="summaries.html">→ كل الملخصات</a>
         <button class="btn small" type="button" onclick="window.print()">🖨️ طباعة / حفظ PDF</button>

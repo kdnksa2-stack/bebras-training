@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>بنك الأسئلة | بيبراس موهبة</title>
+<title>بنك الأسئلة | بيبراس تدريب موهبة</title>
 <meta name="description" content="بنك أسئلة أصلية على نمط بيبراس مع تلميحات وحلول خطوة بخطوة، مع فلترة حسب الفئة والمهارة والصعوبة.">
 <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
 </head>
@@ -83,7 +83,7 @@
     $('print-sel').addEventListener('click', async () => {
       if (!current.length) return;
       const withKey = await App.ask('هل تريد إضافة مفتاح الإجابات في صفحة منفصلة؟', { yes: 'نعم، مع المفتاح', no: 'بدون مفتاح' });
-      App.printHTML(`<div class="paper-head"><h1>ورقة عمل — بيبراس موهبة</h1>
+      App.printHTML(`<div class="paper-head"><h1>ورقة عمل — بيبراس تدريب موهبة</h1>
           <div class="paper-fields"><div>الاسم:</div><div>الصف:</div><div>التاريخ:</div></div></div>
         ${current.map((q, i) => Q.printHTML(q, i + 1)).join('')}
         ${withKey ? Q.answerKeyHTML(current, true) : ''}`);
