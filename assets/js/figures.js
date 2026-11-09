@@ -209,6 +209,8 @@
       case 'table': return table(s, o);
       case 'multi': return multi(s, o);
       case 'svg': return s.svg; // نص SVG جاهز من ملفات المحتوى
+      // صورة جاهزة (مثل صفحات كتاب النشاط الرسمي). الخلفية بيضاء دائمًا لأن الصورة مأخوذة من كتاب مطبوع
+      case 'img': return `<img class="fig-img" src="${esc(s.src)}" alt="${esc(s.alt || '')}" loading="lazy"${s.width ? ` width="${+s.width}" height="${+s.height}"` : ''}>`;
       default: return '';
     }
   }

@@ -1,6 +1,8 @@
 /* ===== الأدوات المشتركة لكل الصفحات ===== */
 (function () {
-  const LEVELS = { g34: 'الصف ٣–٤ ابتدائي', g56: 'الصف ٥–٦ ابتدائي', mid: 'المتوسط', sec: 'الثانوي' };
+  const LEVELS = { mid: 'المتوسط (الصف ٧–٩)', book1: 'كتاب موهبة ١', book2: 'كتاب موهبة ٢' };
+  const GRADE_LEVELS = ['mid'];
+  const BOOK_PDF = 'assets/docs/bebras-activity-book.pdf';
   const DIFFS = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
   const DIFF_ORDER = { easy: 0, medium: 1, hard: 2 };
   const TYPES = { mcq: 'اختيار من متعدد', short: 'إجابة قصيرة', order: 'ترتيب', drag: 'سحب وإفلات', map: 'الضغط على الرسم' };
@@ -98,7 +100,7 @@
       header.className = 'site-header';
       header.innerHTML = `
         <div class="wrap">
-          <a class="brand" href="index.html"><span class="logo" aria-hidden="true">🦫</span>بيبراس تدريب موهبة</a>
+          <a class="brand" href="index.html"><span class="logo" aria-hidden="true"><img src="assets/book/beaver-ksa.png" alt="" width="105" height="164"></span>بيبراس تدريب موهبة</a>
           <nav class="nav" id="nav" aria-label="القائمة الرئيسية">
             ${NAV.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}
           </nav>
@@ -126,9 +128,10 @@
         ['وزارة التعليم', 'https://moe.gov.sa'],
       ];
       footer.innerHTML = `<div class="wrap">
+        <a class="footer-logo" href="https://www.mawhiba.sa" target="_blank" rel="noopener" title="موهبة"><img src="assets/book/mawhiba-logo.png" alt="موهبة Mawhiba" width="247" height="96"></a>
         <nav class="footer-links" aria-label="مواقع رسمية"><span class="footer-label">مواقع رسمية:</span>
           ${official.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join('')}</nav>
-        <p class="footer-note">موقع تعليمي مجاني غير رسمي للتدريب على التفكير الحاسوبي • الأسئلة من تأليف الموقع وليست أسئلة رسمية • للتسجيل والمواعيد: <a href="https://bebrasksa.org" target="_blank" rel="noopener">bebrasksa.org</a><br>تقدّمك يُحفظ في جهازك فقط، ولا نجمع أي بيانات شخصية.</p>
+        <p class="footer-note">موقع تعليمي مجاني غير رسمي للتدريب على التفكير الحاسوبي • أسئلة البنك من تأليف الموقع، ومهام «كتاب موهبة» من <a href="${BOOK_PDF}" target="_blank" rel="noopener">كتاب النشاط الرسمي</a> لفريق بيبراس السعودي • للتسجيل والمواعيد: <a href="https://bebrasksa.org" target="_blank" rel="noopener">bebrasksa.org</a><br>تقدّمك يُحفظ في جهازك فقط، ولا نجمع أي بيانات شخصية.</p>
         <p class="footer-credit">إعداد وتصميم <span class="creator">أحمد أيمن الغامدي</span></p>
       </div>`;
     }
@@ -207,6 +210,6 @@
     });
   }
 
-  window.App = { LEVELS, DIFFS, TYPES, json, esc, fmt, param, progress, skills, skillMap, questions, loadError, shuffle, sortByDifficulty, printHTML, ask };
+  window.App = { LEVELS, GRADE_LEVELS, BOOK_PDF, DIFFS, TYPES, json, esc, fmt, param, progress, skills, skillMap, questions, loadError, shuffle, sortByDifficulty, printHTML, ask };
   document.addEventListener('DOMContentLoaded', shell);
 })();

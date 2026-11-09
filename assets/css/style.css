@@ -67,7 +67,15 @@ code { font-family: Consolas, "Courier New", monospace; background: var(--surfac
 .site-header { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
 .site-header .wrap { display: flex; align-items: center; gap: 10px; min-height: 60px; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; white-space: nowrap; }
-.brand .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 1.1rem; }
+.brand .logo { width: 38px; height: 38px; border-radius: 10px; background: #fff; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border); }
+.brand .logo img { height: 34px; width: auto; display: block; }
+.fig-img { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; background: #fff; border-radius: 12px; border: 1px solid var(--border); }
+.footer-logo { display: inline-block; background: #fff; border-radius: 12px; padding: 6px 12px; margin-bottom: 12px; border: 1px solid var(--border); }
+.footer-logo img { height: 44px; width: auto; display: block; }
+.book-card { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.book-card .book-logo { background: #fff; border-radius: 12px; padding: 8px 12px; border: 1px solid var(--border); }
+.book-card .book-logo img { height: 56px; width: auto; display: block; }
+.book-card .book-text { flex: 1 1 260px; }
 .nav { display: none; position: absolute; inset-inline: 0; top: 60px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 16px 14px; flex-direction: column; gap: 2px; }
 .nav.open { display: flex; }
 .nav a { padding: 10px 12px; border-radius: 10px; color: var(--text); text-decoration: none; font-weight: 600; }

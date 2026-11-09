@@ -89,7 +89,7 @@
         ${withKey ? Q.answerKeyHTML(current, true) : ''}`);
     });
     apply();
-    // فتح سؤال محدد من الرابط: bank.html?q=g34-01
+    // فتح سؤال محدد من الرابط: bank.html?q=mid-01
     const qid = App.param('q');
     if (qid) { const d = list.querySelector(`[data-id="${CSS.escape(qid)}"]`); if (d) { d.open = true; d.scrollIntoView(); } }
   } catch (e) { App.loadError(list, e); }
