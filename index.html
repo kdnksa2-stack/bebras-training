@@ -31,7 +31,7 @@
     <a class="big-link" href="about.html"><span class="ic">ℹ️</span><strong>عن المسابقة</strong><span>ما هي بيبراس؟ ولمن؟ وكيف يكون الاختبار؟</span></a>
     <a class="big-link" href="lessons.html"><span class="ic">📘</span><strong>الدروس</strong><span>12 مهارة، كل درس من 3 إلى 5 دقائق</span></a>
     <a class="big-link" href="summaries.html"><span class="ic">📝</span><strong>الملخصات</strong><span>صفحة واحدة لكل مهارة جاهزة للطباعة</span></a>
-    <a class="big-link" href="bank.html"><span class="ic">🧩</span><strong>بنك الأسئلة</strong><span>20 سؤالًا للمتوسط + 20 مهمة من كتاب موهبة</span></a>
+    <a class="big-link" href="bank.html"><span class="ic">🧩</span><strong>بنك الأسئلة</strong><span>36 سؤالًا (12 لكل صف) + 20 مهمة من كتاب موهبة</span></a>
     <a class="big-link" href="quizzes.html"><span class="ic">⏱️</span><strong>الاختبارات</strong><span>اختبارات جاهزة، ومولّد اختبار حسب اختيارك</span></a>
     <a class="big-link" href="chat.html"><span class="ic">🤖</span><strong>المساعد الذكي</strong><span>اسأل عن أي مسألة أو درس</span></a>
   </div>
@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <h2>أسئلة المرحلة المتوسطة</h2>
+  <h2>اختر صفّك</h2>
   <div class="grid grid-4" id="levels"></div>
 
   <h2>المهارات</h2>
@@ -85,7 +85,7 @@
     document.getElementById('levels').innerHTML = Object.entries(App.LEVELS).filter(([id]) => App.GRADE_LEVELS.includes(id)).map(([id, name]) => {
       const n = qs.filter((q) => q.level === id).length;
       const z = quizzes.filter((x) => x.level === id);
-      return `<div class="card"><h3 style="margin-top:0">${name}</h3><p class="muted">${n} سؤالًا • ${z.length} اختبارات</p>
+      return `<div class="card"><h3 style="margin-top:0">${name}</h3><p class="muted">${n} سؤالًا • ${z.length === 1 ? 'اختبار واحد' : z.length + ' اختبارات'}</p>
         <div class="btn-row"><a class="btn small" href="bank.html?level=${id}">الأسئلة</a>${z[0] ? `<a class="btn small secondary" href="quizzes.html?id=${z[0].id}">اختبار</a>` : ''}</div></div>`;
     }).join('');
 

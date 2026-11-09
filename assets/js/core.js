@@ -1,7 +1,7 @@
 /* ===== الأدوات المشتركة لكل الصفحات ===== */
 (function () {
-  const LEVELS = { mid: 'أول وثاني وثالث متوسط', book1: 'كتاب موهبة ١', book2: 'كتاب موهبة ٢' };
-  const GRADE_LEVELS = ['mid'];
+  const LEVELS = { m1: 'أول متوسط', m2: 'ثاني متوسط', m3: 'ثالث متوسط', book1: 'كتاب موهبة ١', book2: 'كتاب موهبة ٢' };
+  const GRADE_LEVELS = ['m1', 'm2', 'm3'];
   const BOOK_PDF = 'assets/docs/bebras-activity-book.pdf';
   const DIFFS = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
   const DIFF_ORDER = { easy: 0, medium: 1, hard: 2 };
