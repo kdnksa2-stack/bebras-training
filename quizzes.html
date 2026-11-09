@@ -107,7 +107,7 @@
 
   /* ---------- تشغيل الاختبار ---------- */
   function start(z, minutes) {
-    S = { z, resp: z.qs.map(() => undefined), flags: z.qs.map(() => false), cur: 0, endAt: minutes > 0 ? Date.now() + minutes * 60000 : null, timer: null };
+    S = { z, resp: z.qs.map(() => undefined), flags: z.qs.map(() => false), cur: 0, endAt: minutes > 0 ? Date.now() + minutes * 60000 : null, timer: null, startedAt: Date.now() };
     window.onbeforeunload = () => 'الاختبار لم ينتهِ بعد.';
     main.innerHTML = `<div class="quiz-bar">
         <strong>${esc(z.title)}</strong>
@@ -173,6 +173,11 @@
     const results = S.z.qs.map((q, i) => Q.isCorrect(q, S.resp[i]));
     const score = results.filter(Boolean).length, total = results.length;
     if (S.z.id !== 'custom') App.progress.saveQuiz(S.z.id, score, total);
+    App.log('exam', {
+      ref: S.z.id, title: S.z.title, score, total,
+      seconds: Math.round((Date.now() - S.startedAt) / 1000),
+      detail: { wrong: S.z.qs.filter((q, i) => !results[i]).map((q) => q.id), unanswered: S.resp.filter((r, i) => !Q.isAnswered(S.z.qs[i], r)).length },
+    });
     S.z.qs.forEach((q, i) => { if (results[i]) App.progress.markSolved(q.id); });
     const pct = Math.round((score / total) * 100);
     const msg = pct >= 85 ? '🌟 ممتاز! مستواك قوي جدًا.' : pct >= 60 ? '👏 جيد جدًا! راجع أخطاءك لتصل للقمة.' : pct >= 40 ? '💪 بداية جيدة. راجع الحلول ثم أعد المحاولة.' : '📘 لا بأس! اقرأ دروس المهارات التي أخطأت فيها ثم جرّب مرة ثانية.';

@@ -124,6 +124,10 @@ const SYSTEM_PROMPT = `أنت «مساعد بيبراس»، مساعد تعلي�
 
 export default {
   async fetch(request, env) {
+    const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
+    if (path === '/log') return handleLog(request, env);
+    if (path.startsWith('/admin')) return handleAdmin(request, env, path);
+
     const origin = request.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
     const okOrigin = allowed.includes(origin);
@@ -158,6 +162,147 @@ export default {
     }
   },
 };
+
+/* ======================= سجلات الطلاب (D1) =======================
+   POST /log            من الموقع: { user:{id,role,name,grade}, type, page, ref, title, ok, score, total, seconds, detail }
+   GET  /admin/stats    من موقع المشرف فقط + كلمة المرور (Authorization: Bearer ADMIN_KEY)
+   GET  /admin/users    GET /admin/events?user=&type=&limit=   GET /admin/exams?limit=
+   POST /admin/delete-user {id}
+*/
+const LOG_TYPES = ['visit', 'practice', 'exam'];
+const ROLES = ['student', 'teacher'];
+const GRADES = ['m1', 'm2', 'm3'];
+const logMemory = new Map(); // حد بسيط لكل IP: 120 سجلًا في الدقيقة
+const clip = (v, n) => (v === undefined || v === null ? null : String(v).slice(0, n));
+const intOrNull = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Math.round(Number(v)) : null);
+
+function corsFor(origin, list, methods) {
+  const allowed = (list || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const ok = allowed.includes(origin);
+  return { ok, headers: ok
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': methods, 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
+    : { Vary: 'Origin' } };
+}
+
+async function handleLog(request, env) {
+  const origin = request.headers.get('Origin') || '';
+  const c = corsFor(origin, env.ALLOWED_ORIGINS, 'POST, OPTIONS');
+  if (request.method === 'OPTIONS') return new Response(null, { status: c.ok ? 204 : 403, headers: c.headers });
+  if (!c.ok) return reply({ error: 'origin_not_allowed' }, 403, c.headers);
+  if (request.method !== 'POST') return reply({ error: 'method_not_allowed' }, 405, c.headers);
+  if (!env.DB) return reply({ error: 'no_db' }, 503, c.headers);
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const now = Date.now();
+  const arr = (logMemory.get(ip) || []).filter((t) => now - t < 60000);
+  if (arr.length >= 120) return reply({ error: 'rate_limited' }, 429, c.headers);
+  arr.push(now); logMemory.set(ip, arr); if (logMemory.size > 5000) logMemory.clear();
+
+  const raw = await request.text();
+  if (raw.length > 4000) return reply({ error: 'too_large' }, 413, c.headers);
+  let b; try { b = JSON.parse(raw); } catch (e) { return reply({ error: 'bad_json' }, 400, c.headers); }
+  const u = b && b.user;
+  if (!u || typeof u.id !== 'string' || !/^[\w-]{8,64}$/.test(u.id)) return reply({ error: 'bad_user' }, 400, c.headers);
+  if (!ROLES.includes(u.role)) return reply({ error: 'bad_role' }, 400, c.headers);
+  const name = clip(String(u.name || '').replace(/\s+/g, ' ').trim(), 80);
+  if (!name || name.length < 2) return reply({ error: 'bad_name' }, 400, c.headers);
+  const grade = u.role === 'student' && GRADES.includes(u.grade) ? u.grade : null;
+  if (!LOG_TYPES.includes(b.type)) return reply({ error: 'bad_type' }, 400, c.headers);
+
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO users (id, role, name, grade, first_seen, last_seen) VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+        ON CONFLICT(id) DO UPDATE SET role = ?2, name = ?3, grade = ?4, last_seen = ?5`).bind(u.id, u.role, name, grade, now),
+      env.DB.prepare(`INSERT INTO events (user_id, ts, type, page, ref, title, ok, score, total, seconds, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(u.id, now, b.type, clip(b.page, 120), clip(b.ref, 40), clip(b.title, 120),
+          b.ok === true ? 1 : b.ok === false ? 0 : null, intOrNull(b.score), intOrNull(b.total), intOrNull(b.seconds),
+          b.detail ? clip(JSON.stringify(b.detail), 1500) : null),
+    ]);
+    return reply({ ok: true }, 200, c.headers);
+  } catch (e) {
+    console.error('log error', e && e.message);
+    return reply({ error: 'db_error' }, 500, c.headers);
+  }
+}
+
+// مقارنة بزمن ثابت حتى لا يمكن تخمين كلمة المرور حرفًا حرفًا
+function safeEqual(a, b) {
+  const x = new TextEncoder().encode(String(a)), y = new TextEncoder().encode(String(b));
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] || 0) ^ (y[i] || 0);
+  return diff === 0;
+}
+
+async function handleAdmin(request, env, path) {
+  const origin = request.headers.get('Origin') || '';
+  const c = corsFor(origin, env.ADMIN_ORIGINS, 'GET, POST, OPTIONS');
+  if (request.method === 'OPTIONS') return new Response(null, { status: c.ok ? 204 : 403, headers: c.headers });
+  if (!c.ok) return reply({ error: 'origin_not_allowed' }, 403, c.headers);
+  if (!env.ADMIN_KEY || !env.DB) return reply({ error: 'not_configured', message: 'لوحة المشرف غير مفعّلة.' }, 503, c.headers);
+
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const key = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!safeEqual(key, env.ADMIN_KEY)) {
+    if (env.RATE_LIMITER && typeof env.RATE_LIMITER.limit === 'function') await env.RATE_LIMITER.limit({ key: 'admin-fail:' + ip });
+    return reply({ error: 'unauthorized', message: 'كلمة المرور غير صحيحة.' }, 401, c.headers);
+  }
+
+  const q = new URL(request.url).searchParams;
+  const limit = Math.min(Math.max(intOrNull(q.get('limit')) || 200, 1), 1000);
+  const DB = env.DB;
+  try {
+    if (path === '/admin/stats') {
+      const dayAgo = Date.now() - 86400000;
+      const r = await DB.prepare(`SELECT
+          (SELECT COUNT(*) FROM users WHERE role = 'student') AS students,
+          (SELECT COUNT(*) FROM users WHERE role = 'teacher') AS teachers,
+          (SELECT COUNT(*) FROM users WHERE last_seen > ?1) AS active_today,
+          (SELECT COUNT(*) FROM events WHERE type = 'visit') AS visits,
+          (SELECT COUNT(*) FROM events WHERE type = 'practice') AS practice,
+          (SELECT COUNT(*) FROM events WHERE type = 'exam') AS exams,
+          (SELECT ROUND(AVG(100.0 * score / total)) FROM events WHERE type = 'exam' AND total > 0) AS avg_exam_pct`).bind(dayAgo).first();
+      const byGrade = await DB.prepare(`SELECT grade, COUNT(*) AS n FROM users WHERE role = 'student' GROUP BY grade`).all();
+      return reply({ ...r, by_grade: byGrade.results }, 200, c.headers);
+    }
+    if (path === '/admin/users') {
+      const r = await DB.prepare(`SELECT u.id, u.role, u.name, u.grade, u.first_seen, u.last_seen,
+          SUM(e.type = 'visit') AS visits,
+          SUM(e.type = 'practice') AS practice,
+          SUM(e.type = 'practice' AND e.ok = 1) AS practice_ok,
+          SUM(e.type = 'exam') AS exams,
+          MAX(CASE WHEN e.type = 'exam' AND e.total > 0 THEN ROUND(100.0 * e.score / e.total) END) AS best_exam_pct
+        FROM users u LEFT JOIN events e ON e.user_id = u.id
+        GROUP BY u.id ORDER BY u.last_seen DESC LIMIT ?`).bind(limit).all();
+      return reply({ users: r.results }, 200, c.headers);
+    }
+    if (path === '/admin/events') {
+      const user = clip(q.get('user'), 64), type = q.get('type');
+      let sql = `SELECT e.*, u.name, u.role, u.grade FROM events e JOIN users u ON u.id = e.user_id WHERE 1 = 1`;
+      const args = [];
+      if (user) { sql += ` AND e.user_id = ?`; args.push(user); }
+      if (LOG_TYPES.includes(type)) { sql += ` AND e.type = ?`; args.push(type); }
+      sql += ` ORDER BY e.ts DESC LIMIT ?`; args.push(limit);
+      const r = await DB.prepare(sql).bind(...args).all();
+      return reply({ events: r.results }, 200, c.headers);
+    }
+    if (path === '/admin/exams') {
+      const r = await DB.prepare(`SELECT e.*, u.name, u.role, u.grade FROM events e JOIN users u ON u.id = e.user_id
+        WHERE e.type = 'exam' ORDER BY e.ts DESC LIMIT ?`).bind(limit).all();
+      return reply({ exams: r.results }, 200, c.headers);
+    }
+    if (path === '/admin/delete-user' && request.method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const id = clip(b.id, 64);
+      if (!id) return reply({ error: 'bad_id' }, 400, c.headers);
+      await DB.batch([DB.prepare(`DELETE FROM events WHERE user_id = ?`).bind(id), DB.prepare(`DELETE FROM users WHERE id = ?`).bind(id)]);
+      return reply({ ok: true }, 200, c.headers);
+    }
+    return reply({ error: 'not_found' }, 404, c.headers);
+  } catch (e) {
+    console.error('admin error', e && e.message);
+    return reply({ error: 'db_error', message: 'خطأ في قاعدة البيانات.' }, 500, c.headers);
+  }
+}
 
 /* قواعد إضافية عندما يُستخدم المساعد داخل الاختبار (النافذة الجانبية في صفحة الاختبارات) */
 const EXAM_RULES = `

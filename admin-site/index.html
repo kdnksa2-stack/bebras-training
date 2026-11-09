@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>لوحة المشرف | بيبراس تدريب موهبة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<style>
+:root {
+  --bg: #f4f6fb; --surface: #fff; --surface-2: #eef2f8; --text: #1c2433; --muted: #5d6b82; --border: #dde3ee;
+  --primary: #1f6feb; --primary-soft: #e3edff; --ok: #12925a; --ok-soft: #e2f6ec; --bad: #d23a3a; --bad-soft: #fdeaea; --warn: #b8700e;
+  --radius: 14px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141c; --surface: #171e29; --surface-2: #1f2835; --text: #e7ecf3; --muted: #9aa6b8; --border: #2c3747;
+    --primary: #5b9bff; --primary-soft: #1b2b45; --ok: #3ccf86; --ok-soft: #14301f; --bad: #ff7070; --bad-soft: #3a1c1c; --warn: #f0b04a; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Tajawal', system-ui, sans-serif; line-height: 1.6; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 0 4px; }
+header h1 { margin: 0; font-size: 1.35rem; }
+header .sp { margin-inline-start: auto; display: flex; gap: 8px; }
+button, input, select { font: inherit; }
+.btn { border: 1px solid var(--primary); background: var(--primary); color: #fff; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.btn.sec { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn.danger { background: var(--bad); border-color: var(--bad); }
+.btn:disabled { opacity: .6; cursor: default; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.login { max-width: 380px; margin: 12vh auto; display: flex; flex-direction: column; gap: 12px; text-align: center; }
+.login input { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); text-align: center; direction: ltr; }
+.err { color: var(--bad); font-weight: 700; min-height: 1.4em; margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+.stat .n { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat .l { color: var(--muted); font-size: .9rem; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 10px; }
+.tabs button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 7px 16px; font-weight: 700; cursor: pointer; }
+.tabs button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.filters input, .filters select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.filters .count { color: var(--muted); margin-inline-start: auto; }
+.tbl-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { padding: 9px 12px; text-align: start; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { background: var(--surface-2); font-weight: 800; position: sticky; top: 0; }
+tbody tr.click { cursor: pointer; }
+tbody tr.click:hover { background: var(--surface-2); }
+td.num { font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: .82rem; font-weight: 700; background: var(--surface-2); }
+.pill.t { background: var(--primary-soft); color: var(--primary); }
+.pct { font-weight: 800; }
+.pct.hi { color: var(--ok); } .pct.mid { color: var(--warn); } .pct.lo { color: var(--bad); }
+.ok { color: var(--ok); font-weight: 800; } .no { color: var(--bad); font-weight: 800; }
+.muted { color: var(--muted); }
+.empty { padding: 24px; text-align: center; color: var(--muted); }
+.drawer { position: fixed; inset-block: 0; inset-inline-start: 0; width: min(520px, 100vw); background: var(--surface); border-inline-end: 1px solid var(--border); box-shadow: 0 0 40px rgba(0,0,0,.25); z-index: 10; display: flex; flex-direction: column; }
+.drawer[hidden] { display: none; }
+.drawer .hd { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
+.drawer .hd h2 { margin: 0; font-size: 1.2rem; }
+.drawer .bd { overflow-y: auto; padding: 12px 16px; flex: 1; }
+.tl { list-style: none; margin: 0; padding: 0; }
+.tl li { padding: 8px 0; border-bottom: 1px dashed var(--border); display: flex; gap: 10px; }
+.tl .ic { width: 26px; text-align: center; }
+.tl .tm { color: var(--muted); font-size: .82rem; }
+.note { font-size: .85rem; color: var(--muted); margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+(function () {
+  const API = 'https://bebras-chat.kdnksa2.workers.dev';
+  const KEY = 'bebras-admin-key';
+  const app = document.getElementById('app');
+  const GR = { m1: 'أول متوسط', m2: 'ثاني متوسط', m3: 'ثالث متوسط' };
+  const PAGES = { 'index.html': 'الرئيسية', 'about.html': 'عن المسابقة', 'lessons.html': 'الدروس', 'summaries.html': 'الملخصات', 'bank.html': 'بنك الأسئلة', 'quizzes.html': 'الاختبارات', 'videos.html': 'الفيديوهات', 'chat.html': 'المساعد الذكي' };
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', dateStyle: 'medium', timeStyle: 'short' });
+  const when = (ts) => (ts ? fmt.format(new Date(ts)) : '—');
+  function ago(ts) {
+    if (!ts) return '—';
+    const m = Math.round((Date.now() - ts) / 60000);
+    if (m < 1) return 'الآن';
+    if (m < 60) return `قبل ${m} د`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `قبل ${h} س`;
+    return `قبل ${Math.round(h / 24)} يوم`;
+  }
+  const pctCls = (p) => (p >= 75 ? 'hi' : p >= 50 ? 'mid' : 'lo');
+  const mmss = (s) => (s == null ? '—' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
+  const who = (r) => (r.role === 'teacher' ? '<span class="pill t">معلم</span>' : `<span class="pill">${esc(GR[r.grade] || 'طالب')}</span>`);
+  let key = null;
+  try { key = sessionStorage.getItem(KEY); } catch (e) { /* */ }
+
+  async function api(path, opts = {}) {
+    const r = await fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key, ...(opts.headers || {}) } });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { logout(); throw new Error('كلمة المرور غير صحيحة.'); }
+    if (!r.ok) throw new Error(j.message || 'تعذّر الاتصال بالخادم.');
+    return j;
+  }
+  function logout() { key = null; try { sessionStorage.removeItem(KEY); } catch (e) { /* */ } login(); }
+
+  function login(msg) {
+    app.innerHTML = `<form class="card login" id="lf">
+      <div style="font-size:2.4rem">📊</div>
+      <h1 style="margin:0;font-size:1.3rem">لوحة المشرف</h1>
+      <p class="muted" style="margin:0">بيبراس تدريب موهبة: سجلات الطلاب والمعلمين</p>
+      <input type="password" id="pw" placeholder="كلمة المرور" autocomplete="current-password" required>
+      <p class="err" id="le">${esc(msg || '')}</p>
+      <button class="btn" type="submit">دخول</button>
+    </form>`;
+    const f = document.getElementById('lf');
+    document.getElementById('pw').focus();
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      key = document.getElementById('pw').value.trim();
+      const b = f.querySelector('button'); b.disabled = true;
+      try { await api('/admin/stats'); try { sessionStorage.setItem(KEY, key); } catch (e2) { /* */ } dashboard(); }
+      catch (err) { key = null; document.getElementById('le').textContent = err.message; b.disabled = false; }
+    });
+  }
+
+  let USERS = [], EXAMS = [], EVENTS = [], TAB = 'people';
+  async function dashboard() {
+    app.innerHTML = `<header><h1>📊 لوحة المشرف</h1><span class="muted">بيبراس تدريب موهبة</span>
+        <span class="sp"><button class="btn sec" id="rf">🔄 تحديث</button><button class="btn sec" id="lo">خروج</button></span></header>
+      <div class="stats" id="stats"><div class="card">جارٍ التحميل…</div></div>
+      <div class="tabs" id="tabs">
+        <button data-t="people" class="on">👥 الأشخاص</button>
+        <button data-t="exams">📝 نتائج الاختبارات</button>
+        <button data-t="activity">🕒 آخر النشاط</button>
+      </div>
+      <div id="view"></div>
+      <aside class="drawer" id="drawer" hidden></aside>
+      <p class="note">🔒 البيانات خاصة بالطلاب. لا تشاركها إلا مع المعلمين المعنيين. يمكنك حذف بيانات أي شخص من صفحته.</p>`;
+    document.getElementById('lo').onclick = logout;
+    document.getElementById('rf').onclick = load;
+    document.getElementById('tabs').onclick = (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      TAB = b.dataset.t;
+      document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+      render();
+    };
+    load();
+  }
+
+  async function load() {
+    try {
+      const [s, u, x, ev] = await Promise.all([api('/admin/stats'), api('/admin/users?limit=1000'), api('/admin/exams?limit=1000'), api('/admin/events?limit=300')]);
+      USERS = u.users; EXAMS = x.exams; EVENTS = ev.events;
+      const g = Object.fromEntries((s.by_grade || []).map((r) => [r.grade, r.n]));
+      const cards = [
+        ['الطلاب', s.students], ['المعلمون', s.teachers], ['نشطون آخر 24 ساعة', s.active_today],
+        ['أول متوسط', g.m1 || 0], ['ثاني متوسط', g.m2 || 0], ['ثالث متوسط', g.m3 || 0],
+        ['الزيارات', s.visits], ['محاولات التدريب', s.practice], ['اختبارات منجزة', s.exams],
+        ['متوسط الاختبارات', s.avg_exam_pct == null ? '—' : s.avg_exam_pct + '%'],
+      ];
+      document.getElementById('stats').innerHTML = cards.map(([l, n]) => `<div class="card stat"><div class="n">${esc(n ?? 0)}</div><div class="l">${l}</div></div>`).join('');
+      render();
+    } catch (e) {
+      document.getElementById('view').innerHTML = `<div class="card err">${esc(e.message)}</div>`;
+    }
+  }
+
+  function csv(rows, name) {
+    const s = '﻿' + rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([s], { type: 'text/csv;charset=utf-8' }));
+    a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  function render() {
+    const v = document.getElementById('view');
+    if (TAB === 'people') {
+      v.innerHTML = `<div class="filters">
+          <input id="q" placeholder="🔎 ابحث بالاسم">
+          <select id="fr"><option value="">الكل</option><option value="student">طلاب</option><option value="teacher">معلمون</option></select>
+          <select id="fg"><option value="">كل الصفوف</option><option value="m1">أول متوسط</option><option value="m2">ثاني متوسط</option><option value="m3">ثالث متوسط</option></select>
+          <button class="btn sec" id="ex">⬇️ تصدير Excel (CSV)</button><span class="count" id="ct"></span></div>
+        <div class="tbl-wrap"><table><thead><tr><th>الاسم</th><th>الفئة</th><th>آخر دخول</th><th>الزيارات</th><th>التدريب (صحيح/الكل)</th><th>الاختبارات</th><th>أفضل نتيجة</th><th>أول دخول</th></tr></thead><tbody id="tb"></tbody></table></div>`;
+      const draw = () => {
+        const q = document.getElementById('q').value.trim(), r = document.getElementById('fr').value, g = document.getElementById('fg').value;
+        const list = USERS.filter((u) => (!q || u.name.includes(q)) && (!r || u.role === r) && (!g || u.grade === g));
+        document.getElementById('ct').textContent = `${list.length} شخص`;
+        document.getElementById('tb').innerHTML = list.length ? list.map((u) => `<tr class="click" data-id="${esc(u.id)}">
+            <td><strong>${esc(u.name)}</strong></td><td>${who(u)}</td><td title="${esc(when(u.last_seen))}">${ago(u.last_seen)}</td>
+            <td class="num">${u.visits || 0}</td><td class="num">${u.practice_ok || 0} / ${u.practice || 0}</td><td class="num">${u.exams || 0}</td>
+            <td>${u.best_exam_pct == null ? '—' : `<span class="pct ${pctCls(u.best_exam_pct)}">${u.best_exam_pct}%</span>`}</td><td class="muted">${esc(when(u.first_seen))}</td></tr>`).join('')
+          : '<tr><td colspan="8" class="empty">لا يوجد أحد بعد. عندما يدخل الطلاب الموقع ويكتبون أسماءهم سيظهرون هنا.</td></tr>';
+        return list;
+      };
+      ['q', 'fr', 'fg'].forEach((id) => document.getElementById(id).addEventListener('input', draw));
+      document.getElementById('tb').onclick = (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) person(tr.dataset.id); };
+      document.getElementById('ex').onclick = () => {
+        const list = draw();
+        csv([['الاسم', 'الفئة', 'الصف', 'آخر دخول', 'الزيارات', 'التدريب الصحيح', 'التدريب الكلي', 'الاختبارات', 'أفضل نتيجة %', 'أول دخول'],
+          ...list.map((u) => [u.name, u.role === 'teacher' ? 'معلم' : 'طالب', GR[u.grade] || '', when(u.last_seen), u.visits || 0, u.practice_ok || 0, u.practice || 0, u.exams || 0, u.best_exam_pct ?? '', when(u.first_seen)])], 'bebras-people.csv');
+      };
+      draw();
+    } else if (TAB === 'exams') {
+      v.innerHTML = `<div class="filters"><select id="fg"><option value="">كل الصفوف</option><option value="m1">أول متوسط</option><option value="m2">ثاني متوسط</option><option value="m3">ثالث متوسط</option><option value="t">المعلمون</option></select>
+          <select id="fz"><option value="">كل الاختبارات</option>${[...new Set(EXAMS.map((x) => x.title))].map((t) => `<option>${esc(t)}</option>`).join('')}</select>
+          <button class="btn sec" id="ex">⬇️ تصدير Excel (CSV)</button><span class="count" id="ct"></span></div>
+        <div class="tbl-wrap"><table><thead><tr><th>الاسم</th><th>الفئة</th><th>الاختبار</th><th>النتيجة</th><th>النسبة</th><th>الوقت</th><th>لم يُجب</th><th>التاريخ</th></tr></thead><tbody id="tb"></tbody></table></div>`;
+      const draw = () => {
+        const g = document.getElementById('fg').value, z = document.getElementById('fz').value;
+        const list = EXAMS.filter((x) => (!g || (g === 't' ? x.role === 'teacher' : x.grade === g)) && (!z || x.title === z));
+        document.getElementById('ct').textContent = `${list.length} نتيجة`;
+        document.getElementById('tb').innerHTML = list.length ? list.map((x) => {
+          const p = x.total ? Math.round((100 * x.score) / x.total) : 0;
+          let d = {}; try { d = JSON.parse(x.detail || '{}'); } catch (e) { /* */ }
+          return `<tr class="click" data-id="${esc(x.user_id)}"><td><strong>${esc(x.name)}</strong></td><td>${who(x)}</td><td>${esc(x.title)}</td>
+            <td class="num">${x.score} / ${x.total}</td><td><span class="pct ${pctCls(p)}">${p}%</span></td><td class="num">${mmss(x.seconds)}</td>
+            <td class="num">${d.unanswered ?? '—'}</td><td class="muted">${esc(when(x.ts))}</td></tr>`;
+        }).join('') : '<tr><td colspan="8" class="empty">لا توجد نتائج اختبارات بعد.</td></tr>';
+        return list;
+      };
+      ['fg', 'fz'].forEach((id) => document.getElementById(id).addEventListener('input', draw));
+      document.getElementById('tb').onclick = (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) person(tr.dataset.id); };
+      document.getElementById('ex').onclick = () => {
+        const list = draw();
+        csv([['الاسم', 'الفئة', 'الصف', 'الاختبار', 'الدرجة', 'من', 'النسبة %', 'الوقت (ث)', 'الأسئلة الخاطئة', 'التاريخ'],
+          ...list.map((x) => { let d = {}; try { d = JSON.parse(x.detail || '{}'); } catch (e) { /* */ }
+            return [x.name, x.role === 'teacher' ? 'معلم' : 'طالب', GR[x.grade] || '', x.title, x.score, x.total, x.total ? Math.round((100 * x.score) / x.total) : '', x.seconds ?? '', (d.wrong || []).join(' '), when(x.ts)]; })], 'bebras-exams.csv');
+      };
+      draw();
+    } else {
+      v.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th></th><th>الاسم</th><th>الفئة</th><th>النشاط</th><th>الوقت</th></tr></thead><tbody id="tb">${
+        EVENTS.length ? EVENTS.map((e) => `<tr class="click" data-id="${esc(e.user_id)}"><td>${icon(e)}</td><td><strong>${esc(e.name)}</strong></td><td>${who(e)}</td><td>${desc(e)}</td><td class="muted" title="${esc(when(e.ts))}">${ago(e.ts)}</td></tr>`).join('')
+          : '<tr><td colspan="5" class="empty">لا يوجد نشاط بعد.</td></tr>'}</tbody></table></div>`;
+      document.getElementById('tb').onclick = (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) person(tr.dataset.id); };
+    }
+  }
+
+  const icon = (e) => ({ visit: '👁️', practice: e.ok ? '✅' : '❌', exam: '📝' }[e.type] || '•');
+  function desc(e) {
+    if (e.type === 'visit') return `زار صفحة <strong>${esc(PAGES[e.page] || e.page)}</strong>`;
+    if (e.type === 'practice') return `تدريب: ${esc(e.title || e.ref)} <span class="${e.ok ? 'ok' : 'no'}">${e.ok ? 'صحيح' : 'خطأ'}</span>`;
+    const p = e.total ? Math.round((100 * e.score) / e.total) : 0;
+    return `اختبار: ${esc(e.title || e.ref)}: <span class="pct ${pctCls(p)}">${e.score}/${e.total} (${p}%)</span> <span class="muted">في ${mmss(e.seconds)}</span>`;
+  }
+
+  async function person(id) {
+    const d = document.getElementById('drawer');
+    const u = USERS.find((x) => x.id === id) || {};
+    d.hidden = false;
+    d.innerHTML = `<div class="hd"><div><h2>${esc(u.name || '')}</h2><div>${who(u)} <span class="muted">آخر دخول ${ago(u.last_seen)}</span></div></div>
+      <span style="margin-inline-start:auto;display:flex;gap:6px"><button class="btn danger" id="del">حذف بياناته</button><button class="btn sec" id="cl">✕</button></span></div>
+      <div class="bd"><p class="muted">جارٍ التحميل…</p></div>`;
+    document.getElementById('cl').onclick = () => { d.hidden = true; };
+    document.getElementById('del').onclick = async () => {
+      if (!confirm(`حذف كل بيانات «${u.name}» نهائيًا؟ لا يمكن التراجع.`)) return;
+      try { await api('/admin/delete-user', { method: 'POST', body: JSON.stringify({ id }) }); d.hidden = true; load(); }
+      catch (e) { alert(e.message); }
+    };
+    try {
+      const { events } = await api('/admin/events?limit=1000&user=' + encodeURIComponent(id));
+      const pr = events.filter((e) => e.type === 'practice');
+      d.querySelector('.bd').innerHTML = `<p><strong>${events.filter((e) => e.type === 'visit').length}</strong> زيارة •
+          تدريب: <strong>${pr.filter((e) => e.ok).length}</strong> صحيح من <strong>${pr.length}</strong> •
+          <strong>${events.filter((e) => e.type === 'exam').length}</strong> اختبار</p>
+        <ul class="tl">${events.map((e) => `<li><span class="ic">${icon(e)}</span><div>${desc(e)}<div class="tm">${esc(when(e.ts))}</div></div></li>`).join('') || '<li class="muted">لا يوجد نشاط.</li>'}</ul>`;
+    } catch (e) { d.querySelector('.bd').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  }
+
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const d = document.getElementById('drawer'); if (d) d.hidden = true; } });
+  if (key) dashboard(); else login();
+})();
+</script>
+</body>
+</html>

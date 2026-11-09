@@ -93,6 +93,106 @@
     }
   }
 
+  // ----- هوية الطالب/المعلم + السجلات -----
+  // يُطلب الاسم مرة واحدة ويُحفظ في الجهاز. السجلات (زيارات، تدريب، اختبارات) تُرسل للخادم ويراها المشرف فقط.
+  const UKEY = 'bebras-user-v1';
+  let memUser = null;
+  function getUser() {
+    try { const u = JSON.parse(localStorage.getItem(UKEY)); if (u && u.id && u.name && u.role) return u; } catch (e) { /* */ }
+    return memUser;
+  }
+  function setUser(u) { memUser = u; try { localStorage.setItem(UKEY, JSON.stringify(u)); } catch (e) { /* */ } }
+  function newId() {
+    try { return crypto.randomUUID(); } catch (e) { return 'u-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12); }
+  }
+  let logUrl = null;
+  async function logEndpoint() {
+    if (logUrl !== null) return logUrl;
+    try { const c = await json('data/config.json'); logUrl = c.logEndpoint || (c.chatEndpoint ? c.chatEndpoint.replace(/\/+$/, '') + '/log' : ''); } catch (e) { logUrl = ''; }
+    return logUrl;
+  }
+  async function log(type, data = {}) {
+    const u = getUser();
+    if (!u) return;
+    const url = await logEndpoint();
+    if (!url) return;
+    const body = JSON.stringify({ user: { id: u.id, role: u.role, name: u.name, grade: u.grade || null }, type, page: location.pathname.split('/').pop() || 'index.html', ...data });
+    // text/plain = «طلب بسيط» بدون فحص مسبق (preflight)، لأن المتصفحات ترفض keepalive مع الفحص المسبق
+    try { fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body, keepalive: true }).catch(() => {}); } catch (e) { /* */ }
+  }
+  const GRADE_NAMES = { m1: 'أول متوسط', m2: 'ثاني متوسط', m3: 'ثالث متوسط' };
+  const words = (s) => String(s).trim().split(/\s+/).filter(Boolean);
+
+  function gate(prefill) {
+    return new Promise((resolve) => {
+      const u = prefill || {};
+      const w = document.createElement('div');
+      w.className = 'ask-overlay gate';
+      w.innerHTML = `<form class="ask-box card gate-box" role="dialog" aria-modal="true" aria-labelledby="gate-t" novalidate>
+        <img class="gate-logo" src="assets/book/beaver-ksa.png" alt="" width="105" height="164">
+        <h2 id="gate-t">أهلًا بك في بيبراس تدريب موهبة 👋</h2>
+        <p class="muted" style="margin-top:0">قبل البدء، عرّفنا بنفسك:</p>
+        <div class="gate-roles" role="radiogroup" aria-label="أنا">
+          <label><input type="radio" name="role" value="student" ${u.role !== 'teacher' ? 'checked' : ''}><span>🎒 طالب</span></label>
+          <label><input type="radio" name="role" value="teacher" ${u.role === 'teacher' ? 'checked' : ''}><span>👨‍🏫 معلم</span></label>
+        </div>
+        <label class="gate-f"><span class="gate-name-l">اسمك</span><input name="name" maxlength="80" autocomplete="name" value="${esc(u.name || '')}"></label>
+        <label class="gate-f gate-grade"><span>صفّك</span><select name="grade">
+          <option value="">اختر صفّك…</option>${Object.entries(GRADE_NAMES).map(([v, t]) => `<option value="${v}" ${u.grade === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <p class="gate-err" role="alert"></p>
+        <button class="btn" type="submit">ابدأ ←</button>
+        <p class="gate-note"></p>
+      </form>`;
+      document.body.appendChild(w);
+      const f = w.querySelector('form');
+      const err = w.querySelector('.gate-err');
+      const sync = () => {
+        const teacher = f.role.value === 'teacher';
+        w.querySelector('.gate-grade').hidden = teacher;
+        w.querySelector('.gate-name-l').textContent = teacher ? 'اسمك الثلاثي' : 'اسمك';
+        f.name.placeholder = teacher ? 'مثال: محمد عبدالله القحطاني' : 'اكتب اسمك';
+        w.querySelector('.gate-note').textContent = `🔒 يُحفظ اسمك${teacher ? '' : ' وصفّك'} ونتائجك ويراها مشرف الموقع فقط لمتابعة التقدّم. لا تكتب رقم جوالك أو أي معلومات أخرى.`;
+        err.textContent = '';
+      };
+      f.querySelectorAll('[name="role"]').forEach((r) => r.addEventListener('change', sync));
+      sync();
+      setTimeout(() => f.name.focus(), 50);
+      f.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const role = f.role.value;
+        const name = f.name.value.replace(/\s+/g, ' ').trim();
+        const grade = f.grade.value;
+        if (/[0-9٠-٩@]/.test(name)) { err.textContent = 'اكتب الاسم بالحروف فقط.'; return; }
+        if (role === 'teacher') {
+          if (words(name).length < 3 || words(name).some((x) => x.length < 2)) { err.textContent = 'اكتب اسمك الثلاثي (ثلاث كلمات على الأقل).'; return; }
+        } else {
+          if (name.length < 2) { err.textContent = 'اكتب اسمك.'; return; }
+          if (!grade) { err.textContent = 'اختر صفّك.'; return; }
+        }
+        const user = { id: u.id || newId(), role, name, grade: role === 'student' ? grade : null };
+        setUser(user);
+        w.remove();
+        updateUserBtn();
+        resolve(user);
+      });
+    });
+  }
+  function updateUserBtn() {
+    const b = document.getElementById('user-btn');
+    const u = getUser();
+    if (!b) return;
+    b.hidden = !u;
+    if (u) {
+      b.querySelector('span').textContent = words(u.name)[0];
+      b.title = `${u.name}${u.grade ? ' • ' + GRADE_NAMES[u.grade] : u.role === 'teacher' ? ' • معلم' : ''}`;
+    }
+  }
+  async function ensureUser() {
+    if (!getUser()) await gate();
+    updateUserBtn();
+    log('visit', { title: document.title });
+  }
+
   // ----- الرأس والتذييل -----
   function shell() {
     const page = location.pathname.split('/').pop() || 'index.html';
@@ -106,11 +206,18 @@
             ${NAV.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}
           </nav>
           <div class="header-tools">
+            <button class="user-btn" id="user-btn" type="button" hidden aria-label="حسابي"><b aria-hidden="true">👤</b><span></span></button>
             <button class="icon-btn" id="theme-btn" type="button"></button>
             <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="القائمة" aria-expanded="false">☰</button>
           </div>
         </div>`;
       document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+      document.getElementById('user-btn').addEventListener('click', () => {
+        const u = getUser();
+        if (!u) return;
+        const who = `${u.name}${u.grade ? ' (' + GRADE_NAMES[u.grade] + ')' : u.role === 'teacher' ? ' (معلم)' : ''}`;
+        ask(`أنت مسجّل باسم:\n${who}\n\nهل تريد تعديل الاسم أو الصف؟`, { yes: 'تعديل', no: 'إغلاق' }).then((ok) => { if (ok) gate(u); });
+      });
       const mb = document.getElementById('menu-btn');
       mb.addEventListener('click', () => {
         const nav = document.getElementById('nav');
@@ -132,7 +239,7 @@
         <a class="footer-logo" href="https://www.mawhiba.sa" target="_blank" rel="noopener" title="موهبة"><img src="assets/book/mawhiba-logo.png" alt="موهبة Mawhiba" width="247" height="96"></a>
         <nav class="footer-links" aria-label="مواقع رسمية"><span class="footer-label">مواقع رسمية:</span>
           ${official.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join('')}</nav>
-        <p class="footer-note">موقع تعليمي مجاني غير رسمي للتدريب على التفكير الحاسوبي • أسئلة البنك من تأليف الموقع، ومهام «كتاب موهبة» من <a href="${BOOK_PDF}" target="_blank" rel="noopener">كتاب النشاط الرسمي</a> لفريق بيبراس السعودي • للتسجيل والمواعيد: <a href="https://bebrasksa.org" target="_blank" rel="noopener">bebrasksa.org</a><br>تقدّمك يُحفظ في جهازك فقط، ولا نجمع أي بيانات شخصية.</p>
+        <p class="footer-note">موقع تعليمي مجاني غير رسمي للتدريب على التفكير الحاسوبي • أسئلة البنك من تأليف الموقع، ومهام «كتاب موهبة» من <a href="${BOOK_PDF}" target="_blank" rel="noopener">كتاب النشاط الرسمي</a> لفريق بيبراس السعودي • للتسجيل والمواعيد: <a href="https://bebrasksa.org" target="_blank" rel="noopener">bebrasksa.org</a><br>🔒 نحفظ الاسم والصف والنتائج فقط، ويراها مشرف الموقع لمتابعة التقدّم، ولا نشاركها مع أي جهة. المحادثات مع المساعد لا تُحفظ.</p>
         <p class="footer-credit">إعداد وتصميم <span class="creator">أحمد أيمن الغامدي</span></p>
       </div>`;
     }
@@ -211,6 +318,6 @@
     });
   }
 
-  window.App = { LEVELS, GRADE_LEVELS, BOOK_PDF, DIFFS, TYPES, json, esc, fmt, param, progress, skills, skillMap, questions, loadError, shuffle, sortByDifficulty, printHTML, ask };
-  document.addEventListener('DOMContentLoaded', shell);
+  window.App = { user: getUser, log, LEVELS, GRADE_LEVELS, BOOK_PDF, DIFFS, TYPES, json, esc, fmt, param, progress, skills, skillMap, questions, loadError, shuffle, sortByDifficulty, printHTML, ask };
+  document.addEventListener('DOMContentLoaded', () => { shell(); ensureUser(); });
 })();

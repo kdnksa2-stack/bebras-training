@@ -8,9 +8,17 @@ compatibility_date = "2026-10-01"
 [vars]
 # ضع رابط موقعك على GitHub Pages (بدون مسار وبدون / في النهاية)، وافصل بفاصلة
 ALLOWED_ORIGINS = "https://bebras-training.pages.dev,https://kdnksa2-stack.github.io,http://localhost:8000"
+# موقع المشرف (لوحة السجلات)
+ADMIN_ORIGINS = "https://bebras-admin.pages.dev,http://localhost:8001"
 
 # حدّ الرسائل في الدقيقة لكل مستخدم (مجاني). احذف هذا القسم إذا لا تريده.
 [[ratelimits]]
 name = "RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 10, period = 60 }
+
+# قاعدة بيانات سجلات الطلاب (أسماء، زيارات، تدريب، اختبارات) — تُقرأ فقط من موقع المشرف بكلمة مرور
+[[d1_databases]]
+binding = "DB"
+database_name = "bebras-logs"
+database_id = "13e71922-35e2-48ee-ba87-993cc38405b2"

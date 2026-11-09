@@ -1,5 +1,6 @@
 {
   "chatEndpoint": "https://bebras-chat.kdnksa2.workers.dev",
+  "logEndpoint": "https://bebras-chat.kdnksa2.workers.dev/log",
   "maxMessageChars": 1000,
   "maxHistory": 12,
   "suggestions": [
