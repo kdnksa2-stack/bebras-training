@@ -49,7 +49,7 @@
 | `claude.model` | الافتراضي `claude-opus-5-5`. للتوفير: `claude-haiku-5-5` (واجعل `serverFallback: false`) |
 | `claude.effort` | عمق التفكير قبل الرد: `low` / `medium` / `high` |
 | `gemini.models` | النماذج بالترتيب: الأول أساسي والباقي احتياطي إذا كان مشغولًا (الافتراضي `gemini-3.5-flash` ثم `gemini-3.8-flash`) |
-| `gemini.thinkingLevel` | عمق التفكير: `low` (أسرع، الافتراضي) / `medium` / `high` (أدق وأبطأ) |
+| `gemini.thinkingLevel` | عمق التفكير: `low` (أسرع) / `medium` (الافتراضي: أدق في التلميحات) / `high` (أدق وأبطأ) |
 | `gemini.temperature` | `null` = الافتراضي. نماذج Gemini 3 لا يُنصح فيها بخفض temperature |
 | `limits.perMinute` | رسائل في الدقيقة لكل مستخدم، حماية من السبام (الافتراضي 10، و`0` = بلا حد) |
 | `limits.perDay` | حد يومي لكل مستخدم (الافتراضي `0` = بلا حد) |
