@@ -1,45 +1,209 @@
 {
-  "_note": "كل فيديو هنا تم التحقق من وجوده وعنوانه واسم قناته عبر YouTube oEmbed بتاريخ 2026-11-09. grade: all | m1 | m2 | m3",
+  "_note": "كل فيديو وقائمة تشغيل هنا تم التحقق من وجوده وعنوانه واسم قناته عبر YouTube oEmbed بتاريخ 2026-11-09. grade: all | m1 | m2 | m3",
   "sections": [
     {
-      "id": "bebras", "icon": "🦫", "title": "شرح مسابقة بيبراس والاستعداد لها",
+      "id": "bebras",
+      "icon": "🦫",
+      "title": "شرح مسابقة بيبراس والاستعداد لها",
       "desc": "حلول الاختبارات التجريبية ونصائح الاستعداد. حاول تحل السؤال بنفسك أولًا، ثم شاهد الحل.",
       "videos": [
-        { "id": "aBSbd2wJ1To", "grade": "all", "title": "جلسة استعدوا لاختبار بيبراس موهبة: وصايا وإجابات لكل التساؤلات (2024)", "channel": "Computational Competitions Thinking" },
-        { "id": "OY40FfvIyvI", "grade": "all", "title": "حل المستوى الأول: الاختبار التجريبي 2025 خطوة بخطوة", "channel": "Engineer Mohamed Ghonim" },
-        { "id": "1dmLwNbGibY", "grade": "all", "title": "حل الاختبار التجريبي بيبراس 2025", "channel": "Mousatafa Mashaal" },
-        { "id": "hmbkj5oGq4k", "grade": "all", "title": "حل الاختبار التجريبي لمسابقة بيبراس موهبة 2024", "channel": "Engineer Mohamed Ghonim" },
-        { "id": "pNMKsBPa98o", "grade": "all", "title": "حل أسئلة: محاذاة النقاط، السكة الحديدية، استخراج المعادن (نموذج 2023)", "channel": "Mohamed Rezk Ghanem" }
+        {
+          "id": "CWgZHWyWsV4",
+          "grade": "all",
+          "official": true,
+          "title": "طريقة الدخول على الاختبار التجريبي والفعلي لبيبراس موهبة",
+          "channel": "موهبة (القناة الرسمية)"
+        },
+        {
+          "id": "aBSbd2wJ1To",
+          "grade": "all",
+          "title": "جلسة استعدوا لاختبار بيبراس موهبة: وصايا وإجابات لكل التساؤلات (2024)",
+          "channel": "Computational Competitions Thinking"
+        },
+        {
+          "id": "OY40FfvIyvI",
+          "grade": "all",
+          "title": "حل المستوى الأول: الاختبار التجريبي 2025 خطوة بخطوة",
+          "channel": "Engineer Mohamed Ghonim"
+        },
+        {
+          "id": "1dmLwNbGibY",
+          "grade": "all",
+          "title": "حل الاختبار التجريبي بيبراس 2025",
+          "channel": "Mousatafa Mashaal"
+        },
+        {
+          "id": "hmbkj5oGq4k",
+          "grade": "all",
+          "title": "حل الاختبار التجريبي لمسابقة بيبراس موهبة 2024",
+          "channel": "Engineer Mohamed Ghonim"
+        },
+        {
+          "id": "pNMKsBPa98o",
+          "grade": "all",
+          "title": "حل أسئلة: محاذاة النقاط، السكة الحديدية، استخراج المعادن (نموذج 2023)",
+          "channel": "Mohamed Rezk Ghanem"
+        }
       ]
     },
     {
-      "id": "ien", "icon": "📺", "title": "من قنوات عين: دروس المهارات الرقمية",
+      "id": "playlists",
+      "icon": "📂",
+      "title": "قوائم تشغيل بيبراس",
+      "desc": "دورات كاملة لمسابقة بيبراس، كل قائمة فيها عدة فيديوهات متتالية. شغّلها وانتقل بين الفيديوهات من داخل المشغّل.",
+      "videos": [
+        {
+          "list": "PLDMtQ7Wa73jEm-Uc54BxAIrkEr4NUnAip",
+          "thumb": "fjTiNJWOSOk",
+          "grade": "all",
+          "title": "تدريب مسابقة بيبراس 2025",
+          "channel": "Mousatafa Mashaal"
+        },
+        {
+          "list": "PL3tDqKDiJOUYxaviOwwmig3tX2w8oveB8",
+          "thumb": "wZg8yjgUFqY",
+          "grade": "all",
+          "title": "دورة بيبراس (نوفمبر 2025)",
+          "channel": "Engineer Mohamed Ghonim"
+        },
+        {
+          "list": "PL3tDqKDiJOUZoZ2AY4cZrkzYFMMvp09Mz",
+          "thumb": "Op1BFqLC8Kw",
+          "grade": "all",
+          "title": "بيبراس 2025",
+          "channel": "Engineer Mohamed Ghonim"
+        },
+        {
+          "list": "PLDMtQ7Wa73jFvXz61h_lBdCq76wZdQYdO",
+          "thumb": "ZiPH0k2-xag",
+          "grade": "all",
+          "title": "تدريب مسابقة بيبراس 2024",
+          "channel": "Mousatafa Mashaal"
+        },
+        {
+          "list": "PLN3JHlstk9NqbixG3AQGHnRWm05XNuR8h",
+          "thumb": "3D5rY1vGTIY",
+          "grade": "all",
+          "title": "دورة بيبراس موهبة 2023–2024 (الاختبار التجريبي)",
+          "channel": "Cubes Academy"
+        },
+        {
+          "list": "PLN3JHlstk9NpTXgvSVvsl8_6y454-e65p",
+          "thumb": "8tgMkUcDJUI",
+          "grade": "all",
+          "title": "دورة بيبراس موهبة",
+          "channel": "Cubes Academy"
+        },
+        {
+          "list": "PL8iXCawAvIFMB2vyU5mOU-6sbBs0QZIRL",
+          "thumb": "_pAdZz9BiSI",
+          "grade": "all",
+          "title": "بيبراس موهبة: القندس الدولية 2023",
+          "channel": "Computational Competitions Thinking"
+        },
+        {
+          "list": "PLDMtQ7Wa73jEsVMjKbihByA118ebphVuN",
+          "thumb": "vl8PHRXuy1k",
+          "grade": "all",
+          "title": "تدريب بيبراس 2023",
+          "channel": "Mousatafa Mashaal"
+        }
+      ]
+    },
+    {
+      "id": "ien",
+      "icon": "📺",
+      "title": "من قنوات عين: دروس المهارات الرقمية",
       "desc": "دروس البرمجة والتفكير المنطقي من قناة «عين دروس» التابعة لوزارة التعليم.",
       "videos": [
-        { "id": "UQj5phGznME", "grade": "m2", "title": "ارسم والعب مع حاسوبي: الحاسب وتقنية المعلومات", "channel": "iEN (عين)" },
-        { "id": "UjCbenZ9Seo", "grade": "m2", "title": "الحلقات التكرارية (Loops)", "channel": "عين دروس" },
-        { "id": "l0NW3g4yYXw", "grade": "m2", "title": "البرمجة التركيبية (١)", "channel": "عين دروس" },
-        { "id": "hYukTDD93zs", "grade": "m2", "title": "البرمجة التركيبية (٤)", "channel": "عين دروس" },
-        { "id": "raFCUB1qcI8", "grade": "m3", "title": "البرمجة المتقدمة في بايثون: القوائم وصفوف البيانات", "channel": "عين دروس" },
-        { "id": "q5qr7V3xeSc", "grade": "m3", "title": "بناء الواجهات الرسومية بلغة بايثون", "channel": "عين دروس" },
-        { "id": "FltnIi92Stk", "grade": "m3", "title": "مستشعرات المسافة (برمجة الروبوت)", "channel": "عين دروس" }
+        {
+          "id": "UQj5phGznME",
+          "grade": "m2",
+          "title": "ارسم والعب مع حاسوبي: الحاسب وتقنية المعلومات",
+          "channel": "iEN (عين)"
+        },
+        {
+          "id": "UjCbenZ9Seo",
+          "grade": "m2",
+          "title": "الحلقات التكرارية (Loops)",
+          "channel": "عين دروس"
+        },
+        {
+          "id": "l0NW3g4yYXw",
+          "grade": "m2",
+          "title": "البرمجة التركيبية (١)",
+          "channel": "عين دروس"
+        },
+        {
+          "id": "hYukTDD93zs",
+          "grade": "m2",
+          "title": "البرمجة التركيبية (٤)",
+          "channel": "عين دروس"
+        },
+        {
+          "id": "raFCUB1qcI8",
+          "grade": "m3",
+          "title": "البرمجة المتقدمة في بايثون: القوائم وصفوف البيانات",
+          "channel": "عين دروس"
+        },
+        {
+          "id": "q5qr7V3xeSc",
+          "grade": "m3",
+          "title": "بناء الواجهات الرسومية بلغة بايثون",
+          "channel": "عين دروس"
+        },
+        {
+          "id": "FltnIi92Stk",
+          "grade": "m3",
+          "title": "مستشعرات المسافة (برمجة الروبوت)",
+          "channel": "عين دروس"
+        }
       ]
     },
     {
-      "id": "skills", "icon": "💻", "title": "دروس المهارات الرقمية: أول متوسط",
+      "id": "skills",
+      "icon": "💻",
+      "title": "دروس المهارات الرقمية: أول متوسط",
       "desc": "أساسيات البرمجة والمنطق من قناة «مهارات رقمية».",
       "videos": [
-        { "id": "YFg6yuoanh8", "grade": "m1", "title": "ما البرنامج؟ (مقدمة في البرمجة)", "channel": "مهارات رقمية" },
-        { "id": "XhJUyPVzfnE", "grade": "m1", "title": "الدوال المنطقية (دالة IF)", "channel": "مهارات رقمية" },
-        { "id": "3VzJkKwi6g8", "grade": "m1", "title": "الإحداثيات في البرمجة (برمجة الروبوت الافتراضي)", "channel": "مهارات رقمية" },
-        { "id": "zfIVZPD-HfY", "grade": "m3", "title": "القوائم وصفوف البيانات (بايثون)", "channel": "مهارات رقمية" }
+        {
+          "id": "YFg6yuoanh8",
+          "grade": "m1",
+          "title": "ما البرنامج؟ (مقدمة في البرمجة)",
+          "channel": "مهارات رقمية"
+        },
+        {
+          "id": "XhJUyPVzfnE",
+          "grade": "m1",
+          "title": "الدوال المنطقية (دالة IF)",
+          "channel": "مهارات رقمية"
+        },
+        {
+          "id": "3VzJkKwi6g8",
+          "grade": "m1",
+          "title": "الإحداثيات في البرمجة (برمجة الروبوت الافتراضي)",
+          "channel": "مهارات رقمية"
+        },
+        {
+          "id": "zfIVZPD-HfY",
+          "grade": "m3",
+          "title": "القوائم وصفوف البيانات (بايثون)",
+          "channel": "مهارات رقمية"
+        }
       ]
     },
     {
-      "id": "ct", "icon": "🧠", "title": "ما هو التفكير الحاسوبي؟",
+      "id": "ct",
+      "icon": "🧠",
+      "title": "ما هو التفكير الحاسوبي؟",
       "desc": "محاضرة تشرح مفهوم التفكير الحاسوبي ومهاراته (مناسبة أيضًا للمعلمين وأولياء الأمور).",
       "videos": [
-        { "id": "evFC8RANjeo", "grade": "all", "title": "مفهوم التفكير الحاسوبي ومهاراته", "channel": "مركز التميز البحثي في تطوير تعليم العلوم والرياضيات" }
+        {
+          "id": "evFC8RANjeo",
+          "grade": "all",
+          "title": "مفهوم التفكير الحاسوبي ومهاراته",
+          "channel": "مركز التميز البحثي في تطوير تعليم العلوم والرياضيات"
+        }
       ]
     }
   ]

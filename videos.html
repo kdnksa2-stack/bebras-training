@@ -45,16 +45,22 @@
       const vids = s.videos.filter((v) => !g || v.grade === g || v.grade === 'all');
       if (!vids.length) return '';
       return `<section class="vid-sec"><h2>${s.icon} ${esc(s.title)}</h2><p class="muted">${esc(s.desc)}</p>
-        <div class="vid-grid">${vids.map((v) => `
+        <div class="vid-grid">${vids.map((v) => {
+          const isList = !!v.list;
+          const thumb = isList ? `https://i.ytimg.com/vi/${esc(v.thumb)}/hqdefault.jpg` : `https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg`;
+          const yt = isList ? `https://www.youtube.com/playlist?list=${esc(v.list)}` : `https://www.youtube.com/watch?v=${esc(v.id)}`;
+          return `
           <article class="vid card">
-            <button type="button" class="vid-thumb" data-id="${esc(v.id)}" aria-label="تشغيل: ${esc(v.title)}">
-              <img src="https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
+            <button type="button" class="vid-thumb" ${isList ? `data-list="${esc(v.list)}"` : `data-id="${esc(v.id)}"`} aria-label="تشغيل: ${esc(v.title)}">
+              <img src="${thumb}" alt="" loading="lazy" width="480" height="360">
               <span class="vid-play" aria-hidden="true">▶</span>
+              ${isList ? '<span class="vid-list-tag">☰ قائمة تشغيل</span>' : ''}
             </button>
             <h3>${esc(v.title)}</h3>
-            <p class="muted vid-meta"><span>📺 ${esc(v.channel)}</span><span class="badge">${esc(GR[v.grade] || '')}</span></p>
-            <a class="vid-yt" href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">افتح في يوتيوب ↗</a>
-          </article>`).join('')}</div></section>`;
+            <p class="muted vid-meta"><span>📺 ${esc(v.channel)}</span>${v.official ? '<span class="badge done">✓ رسمي</span>' : ''}<span class="badge">${esc(GR[v.grade] || '')}</span></p>
+            <a class="vid-yt" href="${yt}" target="_blank" rel="noopener">${isList ? 'افتح القائمة في يوتيوب ↗' : 'افتح في يوتيوب ↗'}</a>
+          </article>`;
+        }).join('')}</div></section>`;
     }).join('') || '<div class="notice">لا توجد فيديوهات لهذا الصف بعد.</div>';
   }
 
@@ -63,7 +69,9 @@
     const b = e.target.closest('.vid-thumb');
     if (!b) return;
     const f = document.createElement('iframe');
-    f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(b.dataset.id)}?autoplay=1&rel=0`;
+    f.src = b.dataset.list
+      ? `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(b.dataset.list)}&autoplay=1&rel=0`
+      : `https://www.youtube-nocookie.com/embed/${encodeURIComponent(b.dataset.id)}?autoplay=1&rel=0`;
     f.title = 'فيديو';
     f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
     f.allowFullscreen = true;
