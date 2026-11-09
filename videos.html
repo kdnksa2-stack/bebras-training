@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فيديوهات التدريب | بيبراس تدريب موهبة</title>
+<meta name="description" content="فيديوهات تدريب على مسابقة بيبراس موهبة والتفكير الحاسوبي لطلاب الصف الأول والثاني والثالث المتوسط: حلول الاختبارات التجريبية ودروس من قنوات عين.">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦫</text></svg>">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="wrap">
+  <h1>🎬 فيديوهات التدريب</h1>
+  <p class="lead">شروحات لمسابقة بيبراس، ودروس برمجة ومنطق من قنوات عين. نصيحة: حل السؤال بنفسك أولًا، ثم شاهد الشرح.</p>
+  <div class="vid-filter" role="group" aria-label="اختر الصف" id="filter">
+    <button type="button" data-g="" class="on">الكل</button>
+    <button type="button" data-g="m1">أول متوسط</button>
+    <button type="button" data-g="m2">ثاني متوسط</button>
+    <button type="button" data-g="m3">ثالث متوسط</button>
+  </div>
+  <div id="sections"><p class="muted">جارٍ التحميل…</p></div>
+  <div class="card" style="margin-top:24px">
+    <h3 style="margin-top:0">📚 مكتبة بيبراس الرسمية</h3>
+    <p class="muted">نماذج أسئلة السنوات السابقة وأنشطة وفيديوهات من الموقع الرسمي لبيبراس موهبة.</p>
+    <a class="btn small" href="https://bebrasksa.org/about-competition/bebras-library/" target="_blank" rel="noopener">افتح مكتبة بيبراس ↗</a>
+  </div>
+  <p class="muted" style="font-size:.85rem;margin-top:16px">الفيديوهات من قنوات يوتيوب أصحابها، وتُعرض هنا كما هي. الموقع غير مسؤول عن محتوى القنوات الخارجية.</p>
+</main>
+<footer id="site-footer"></footer>
+<script src="assets/js/core.js"></script>
+<script>
+(async function () {
+  const box = document.getElementById('sections');
+  const { esc } = App;
+  const GR = { all: 'لكل الصفوف', m1: 'أول متوسط', m2: 'ثاني متوسط', m3: 'ثالث متوسط' };
+  let data;
+  try { data = await App.json('data/videos.json'); } catch (e) { App.loadError(box, e); return; }
+
+  function render(g) {
+    box.innerHTML = data.sections.map((s) => {
+      const vids = s.videos.filter((v) => !g || v.grade === g || v.grade === 'all');
+      if (!vids.length) return '';
+      return `<section class="vid-sec"><h2>${s.icon} ${esc(s.title)}</h2><p class="muted">${esc(s.desc)}</p>
+        <div class="vid-grid">${vids.map((v) => `
+          <article class="vid card">
+            <button type="button" class="vid-thumb" data-id="${esc(v.id)}" aria-label="تشغيل: ${esc(v.title)}">
+              <img src="https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
+              <span class="vid-play" aria-hidden="true">▶</span>
+            </button>
+            <h3>${esc(v.title)}</h3>
+            <p class="muted vid-meta"><span>📺 ${esc(v.channel)}</span><span class="badge">${esc(GR[v.grade] || '')}</span></p>
+            <a class="vid-yt" href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">افتح في يوتيوب ↗</a>
+          </article>`).join('')}</div></section>`;
+    }).join('') || '<div class="notice">لا توجد فيديوهات لهذا الصف بعد.</div>';
+  }
+
+  // الفيديو لا يُحمَّل إلا عند الضغط (أخف وأسرع للصفحة)
+  box.addEventListener('click', (e) => {
+    const b = e.target.closest('.vid-thumb');
+    if (!b) return;
+    const f = document.createElement('iframe');
+    f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(b.dataset.id)}?autoplay=1&rel=0`;
+    f.title = 'فيديو';
+    f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    f.allowFullscreen = true;
+    f.className = 'vid-frame';
+    b.replaceWith(f);
+  });
+
+  const filter = document.getElementById('filter');
+  filter.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    filter.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    render(b.dataset.g);
+  });
+  const start = App.param('grade') || '';
+  const sb = filter.querySelector(`[data-g="${CSS.escape(start)}"]`);
+  if (sb) { filter.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === sb)); }
+  render(sb ? start : '');
+})();
+</script>
+</body>
+</html>

@@ -13,6 +13,7 @@
     ['summaries.html', 'الملخصات'],
     ['bank.html', 'بنك الأسئلة'],
     ['quizzes.html', 'الاختبارات'],
+    ['videos.html', 'الفيديوهات'],
     ['chat.html', 'المساعد الذكي'],
   ];
 
