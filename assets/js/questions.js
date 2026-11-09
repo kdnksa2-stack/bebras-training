@@ -88,6 +88,24 @@
     </div>`;
   }
 
+  /* ---------- سؤال مشابه: نفس المهارة بقصة مختلفة ----------
+     الأفضلية: نفس الصف/المستوى، ثم سؤال لم يُحل بعد، ويُختار عشوائيًا من الأفضل */
+  async function similarHTML(q, newTab) {
+    try {
+      const all = await App.questions();
+      const p = App.progress.get();
+      const pool = all.filter((x) => x.skill === q.skill && x.id !== q.id);
+      if (!pool.length) return '';
+      const score = (x) => (x.level === q.level ? 2 : 0) + (p.solved[x.id] ? 0 : 1);
+      const best = Math.max(...pool.map(score));
+      const cands = pool.filter((x) => score(x) === best);
+      const s = cands[Math.floor(Math.random() * cands.length)];
+      const href = `bank.html?skill=${encodeURIComponent(q.skill)}&q=${encodeURIComponent(s.id)}`;
+      return `<div class="similar"><a class="btn secondary" href="${href}"${newTab ? ' target="_blank" rel="noopener"' : ''}>🔁 سؤال مشابه: ${esc(s.title)}</a>
+        <span class="muted">نفس الفكرة بقصة مختلفة${s.level !== q.level ? ` (${esc(App.LEVELS[s.level] || '')})` : ''}</span></div>`;
+    } catch (e) { return ''; }
+  }
+
   /* ---------- واجهات التفاعل ---------- */
   function mountMCQ(q, box, st, locked) {
     box.innerHTML = `<div class="opts" role="radiogroup">${q.options.map((o, i) => `
@@ -270,7 +288,12 @@
     MOUNTERS[q.type](q, box, st, locked);
     const fb = el.querySelector('.q-feedback');
     const sol = el.querySelector('.q-sol');
-    const showSolution = () => { sol.innerHTML = solutionHTML(q); sol.hidden = false; };
+    const showSolution = () => {
+      sol.innerHTML = solutionHTML(q);
+      sol.hidden = false;
+      // في المراجعة بعد الاختبار يُفتح في تبويب جديد حتى لا تضيع صفحة النتيجة
+      similarHTML(q, mode === 'review').then((h) => { if (h && !sol.querySelector('.similar')) sol.insertAdjacentHTML('beforeend', h); });
+    };
 
     if (mode === 'review') {
       st.locked = true;

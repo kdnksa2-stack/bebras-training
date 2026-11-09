@@ -72,6 +72,7 @@ code { font-family: Consolas, "Courier New", monospace; background: var(--surfac
 .fig-img { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; background: #fff; border-radius: 12px; border: 1px solid var(--border); }
 .footer-logo { display: inline-block; background: #fff; border-radius: 12px; padding: 6px 12px; margin-bottom: 12px; border: 1px solid var(--border); }
 .footer-logo img { height: 44px; width: auto; display: block; }
+.similar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
 .book-card { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .book-card .book-logo { background: #fff; border-radius: 12px; padding: 8px 12px; border: 1px solid var(--border); }
 .book-card .book-logo img { height: 56px; width: auto; display: block; }
