@@ -72,6 +72,29 @@ code { font-family: Consolas, "Courier New", monospace; background: var(--surfac
 .fig-img { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; background: #fff; border-radius: 12px; border: 1px solid var(--border); }
 .footer-logo { display: inline-block; background: #fff; border-radius: 12px; padding: 6px 12px; margin-bottom: 12px; border: 1px solid var(--border); }
 .footer-logo img { height: 44px; width: auto; display: block; }
+/* ===== المساعد كنافذة جانبية (الاختبارات) ===== */
+.helper { position: fixed; z-index: 60; display: flex; flex-direction: column; gap: 8px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 8px 30px rgba(0,0,0,.25); padding: 10px 12px 8px;
+  inset-inline-end: 16px; bottom: 16px; top: 80px; width: 360px; border-radius: var(--radius); }
+.helper[hidden], .helper-fab[hidden] { display: none; }
+.helper-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.helper-mode { font-size: .78rem; color: var(--muted); background: var(--surface-2, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; }
+.helper-tools { margin-inline-start: auto; display: flex; gap: 6px; }
+.helper-tools .icon-btn { width: 34px; height: 34px; }
+.helper-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+.helper-log .msg { max-width: 100%; font-size: .95rem; }
+.helper-cur { align-self: stretch; }
+.helper-form { display: flex; gap: 6px; align-items: flex-end; }
+.helper-form textarea { flex: 1; resize: none; min-height: 44px; max-height: 120px; font: inherit; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.helper-foot { font-size: .75rem; color: var(--muted); text-align: center; }
+.helper-fab { position: fixed; z-index: 60; inset-inline-end: 16px; bottom: 16px; border: 0; border-radius: 999px; padding: 12px 18px; font: inherit; font-weight: 800; color: #fff; background: var(--primary); box-shadow: 0 6px 20px rgba(0,0,0,.3); cursor: pointer; }
+@media (min-width: 1100px) {
+  /* على الشاشات الكبيرة: يُزاح المحتوى حتى لا تغطيه النافذة */
+  body.helper-open .wrap { margin-inline-end: 392px; margin-inline-start: max(16px, calc((100vw - 392px - 1040px) / 2)); }
+}
+@media (max-width: 1099px) {
+  .helper { inset-inline: 8px; top: auto; bottom: 8px; width: auto; height: 72vh; }
+}
+@media print { .helper, .helper-fab { display: none !important; } }
 .similar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
 .book-card { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .book-card .book-logo { background: #fff; border-radius: 12px; padding: 8px 12px; border: 1px solid var(--border); }
