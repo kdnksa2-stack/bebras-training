@@ -1,6 +1,6 @@
 /* ===== الأدوات المشتركة لكل الصفحات ===== */
 (function () {
-  const LEVELS = { mid: 'المتوسط (الصف ٧–٩)', book1: 'كتاب موهبة ١', book2: 'كتاب موهبة ٢' };
+  const LEVELS = { mid: 'أول وثاني وثالث متوسط', book1: 'كتاب موهبة ١', book2: 'كتاب موهبة ٢' };
   const GRADE_LEVELS = ['mid'];
   const BOOK_PDF = 'assets/docs/bebras-activity-book.pdf';
   const DIFFS = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
