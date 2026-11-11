@@ -1,2 +1,6 @@
 .wrangler/
 node_modules/
+
+# ملفات صوت لفيديو شخصي: لا تُرفع إلى GitHub
+*.MP3
+*.mp3
