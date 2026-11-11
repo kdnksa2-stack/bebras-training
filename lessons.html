@@ -43,7 +43,7 @@
         <div class="grid grid-3">${skills.map((s, i) => `
           <a class="card skill-card" href="lessons.html?id=${s.id}"><span class="ic">${s.icon}</span>
             <div><h3>${i + 1}. ${esc(s.title)}</h3><p>${esc(s.desc)}</p>
-            <p style="margin-top:6px">${p.lessons[s.id] ? '<span class="badge done">✓ مكتمل</span>' : '<span class="badge">لم يكتمل</span>'}</p></div></a>`).join('')}
+            <p style="margin-top:6px">${p.lessons[s.id] ? '<span class="badge done">✓ مكتمل</span>' : '<span class="badge">لم يكمل الطالب هذا الدرس</span>'}</p></div></a>`).join('')}
         </div>`;
       return;
     }
