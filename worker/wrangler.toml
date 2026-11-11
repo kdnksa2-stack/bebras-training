@@ -11,7 +11,7 @@ ALLOWED_ORIGINS = "https://bebras-training.pages.dev,https://kdnksa2-stack.githu
 # موقع المشرف (لوحة السجلات)
 ADMIN_ORIGINS = "https://bebras-admin.pages.dev,http://localhost:8001"
 
-# حدّ الرسائل في الدقيقة لكل مستخدم (مجاني). احذف هذا القسم إذا لا تريده.
+# حدّ رسائل المساعد في الدقيقة لكل طالب (مجاني). احذف هذا القسم إذا لا تريده.
 [[ratelimits]]
 name = "RATE_LIMITER"
 namespace_id = "1001"
@@ -22,3 +22,15 @@ simple = { limit = 10, period = 60 }
 binding = "DB"
 database_name = "bebras-logs"
 database_id = "13e71922-35e2-48ee-ba87-993cc38405b2"
+
+# حد إضافي لكل عنوان IP للمساعد (فصل كامل يشترك غالبًا في IP واحد، فالحد الأساسي لكل طالب)
+[[ratelimits]]
+name = "RATE_LIMITER_IP"
+namespace_id = "1002"
+simple = { limit = 60, period = 60 }
+
+# حد لطلبات لوحة المشرف لكل IP (يمنع تخمين كلمة المرور)
+[[ratelimits]]
+name = "RATE_LIMITER_ADMIN"
+namespace_id = "1003"
+simple = { limit = 60, period = 60 }

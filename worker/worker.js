@@ -140,13 +140,20 @@ export default {
     if (request.method !== 'POST') return reply({ error: 'method_not_allowed' }, 405, cors);
 
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const rate = await checkRate(ip, env);
-    if (!rate.ok) return reply({ error: 'rate_limited', message: rate.message }, 429, cors);
-
     const raw = await request.text();
     if (raw.length > CONFIG.limits.maxTotalChars * 2) return reply({ error: 'too_large', message: 'المحادثة طويلة جدًا. ابدأ محادثة جديدة.' }, 413, cors);
     let body;
     try { body = JSON.parse(raw); } catch (e) { return reply({ error: 'bad_json', message: 'طلب غير صالح.' }, 400, cors); }
+
+    // الحد لكل طالب (وليس لكل IP)، لأن طلاب المدرسة الواحدة غالبًا يخرجون من نفس عنوان الإنترنت.
+    // ومعه حد أعلى لكل IP (RATE_LIMITER_IP) حتى لا يُستغل بمعرّفات وهمية.
+    if (env.RATE_LIMITER_IP && typeof env.RATE_LIMITER_IP.limit === 'function') {
+      const { success } = await env.RATE_LIMITER_IP.limit({ key: 'ip:' + ip });
+      if (!success) return reply({ error: 'rate_limited', message: 'الضغط كبير على المساعد من شبكتك الآن. انتظر دقيقة ثم حاول مرة أخرى.' }, 429, cors);
+    }
+    const who = body && typeof body.uid === 'string' && /^[\w-]{8,64}$/.test(body.uid) ? 'u:' + body.uid : 'ip:' + ip;
+    const rate = await checkRate(who, env);
+    if (!rate.ok) return reply({ error: 'rate_limited', message: rate.message }, 429, cors);
 
     const v = validate(body);
     if (v.error) return reply({ error: v.error, message: v.message }, 400, cors);
@@ -172,7 +179,7 @@ export default {
 const LOG_TYPES = ['visit', 'practice', 'exam'];
 const ROLES = ['student', 'teacher'];
 const GRADES = ['m1', 'm2', 'm3'];
-const logMemory = new Map(); // حد بسيط لكل IP: 120 سجلًا في الدقيقة
+const logMemory = new Map(); // حد بسيط لكل IP: 1000 سجل في الدقيقة (فصل كامل قد يشترك في IP واحد)
 const clip = (v, n) => (v === undefined || v === null ? null : String(v).slice(0, n));
 const intOrNull = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Math.round(Number(v)) : null);
 
@@ -195,7 +202,7 @@ async function handleLog(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   const now = Date.now();
   const arr = (logMemory.get(ip) || []).filter((t) => now - t < 60000);
-  if (arr.length >= 120) return reply({ error: 'rate_limited' }, 429, c.headers);
+  if (arr.length >= 1000) return reply({ error: 'rate_limited' }, 429, c.headers);
   arr.push(now); logMemory.set(ip, arr); if (logMemory.size > 5000) logMemory.clear();
 
   const raw = await request.text();
@@ -241,9 +248,13 @@ async function handleAdmin(request, env, path) {
   if (!env.ADMIN_KEY || !env.DB) return reply({ error: 'not_configured', message: 'لوحة المشرف غير مفعّلة.' }, 503, c.headers);
 
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  // حد لكل طلبات لوحة المشرف من نفس IP: يمنع تخمين كلمة المرور (60 طلبًا في الدقيقة يكفي للاستخدام العادي)
+  if (env.RATE_LIMITER_ADMIN && typeof env.RATE_LIMITER_ADMIN.limit === 'function') {
+    const { success } = await env.RATE_LIMITER_ADMIN.limit({ key: 'admin:' + ip });
+    if (!success) return reply({ error: 'rate_limited', message: 'محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى.' }, 429, c.headers);
+  }
   const key = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
   if (!safeEqual(key, env.ADMIN_KEY)) {
-    if (env.RATE_LIMITER && typeof env.RATE_LIMITER.limit === 'function') await env.RATE_LIMITER.limit({ key: 'admin-fail:' + ip });
     return reply({ error: 'unauthorized', message: 'كلمة المرور غير صحيحة.' }, 401, c.headers);
   }
 

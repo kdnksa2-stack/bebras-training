@@ -155,7 +155,7 @@
         const res = await fetch(cfg.chatEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: history.slice(-(cfg.maxHistory || 12)), context: CONTEXT }),
+          body: JSON.stringify({ messages: history.slice(-(cfg.maxHistory || 12)), context: CONTEXT, uid: (App.user() || {}).id }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.message || (res.status === 429 ? 'أرسلت رسائل كثيرة بسرعة. انتظر دقيقة ثم حاول مرة أخرى.' : 'حدث خطأ في الاتصال. حاول مرة أخرى.'));
