@@ -95,6 +95,7 @@ code { font-family: Consolas, "Courier New", monospace; background: var(--surfac
 .gate-note { font-size: .8rem; color: var(--muted); margin: 0; }
 .user-btn { display: inline-flex; align-items: center; gap: 6px; height: 42px; max-width: 160px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
 .user-btn[hidden] { display: none; }
+.admin-btn { border-color: var(--primary); color: var(--primary); }
 .user-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-btn:hover { background: var(--surface-2); }
 @media (max-width: 480px) { .user-btn span { display: none; } .user-btn { padding: 0; width: 42px; justify-content: center; } }

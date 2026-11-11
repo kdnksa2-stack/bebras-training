@@ -127,6 +127,7 @@ export default {
     const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
     if (path === '/log') return handleLog(request, env);
     if (path.startsWith('/admin')) return handleAdmin(request, env, path);
+    if (path.startsWith('/access/')) return handleAccess(request, env, path);
 
     const origin = request.headers.get('Origin') || '';
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -240,6 +241,68 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
+/* ---------- الدخول للوحة المشرف ----------
+   1) كلمة المرور ADMIN_KEY ← المالك
+   2) رمز جهاز المالك dev_… ← المالك (بدون كتابة كلمة المرور)
+   3) جلسة مؤقتة ses_… لشخص مُنح صلاحية المشاهدة ← مشاهد فقط */
+const ADMIN_SITE = 'https://bebras-admin.pages.dev';
+function randomToken() {
+  const b = crypto.getRandomValues(new Uint8Array(24));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function sha256hex(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+async function adminAuth(env, key) {
+  if (!key) return null;
+  if (safeEqual(key, env.ADMIN_KEY)) return { role: 'owner', via: 'password' };
+  if (/^dev_[\w-]{20,}$/.test(key)) {
+    const r = await env.DB.prepare(`SELECT id, label FROM owner_devices WHERE token_hash = ?`).bind(await sha256hex(key)).first();
+    if (r) {
+      await env.DB.prepare(`UPDATE owner_devices SET last_used = ? WHERE id = ?`).bind(Date.now(), r.id).run();
+      return { role: 'owner', via: 'device', device: r.id, label: r.label };
+    }
+  }
+  if (/^ses_[\w-]{20,}$/.test(key)) {
+    // الربط مع viewers يجعل إلغاء الصلاحية فوريًا
+    const r = await env.DB.prepare(`SELECT s.user_id, s.expires, u.name FROM sessions s JOIN viewers v ON v.user_id = s.user_id
+      LEFT JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`).bind(await sha256hex(key)).first();
+    if (r && r.expires > Date.now()) return { role: 'viewer', via: 'session', user_id: r.user_id, label: r.name };
+  }
+  return null;
+}
+
+/* من الموقع: هل هذا الشخص لديه صلاحية مشاهدة اللوحة؟ وإصدار جلسة له */
+async function handleAccess(request, env, path) {
+  const origin = request.headers.get('Origin') || '';
+  const c = corsFor(origin, env.ALLOWED_ORIGINS, 'POST, OPTIONS');
+  if (request.method === 'OPTIONS') return new Response(null, { status: c.ok ? 204 : 403, headers: c.headers });
+  if (!c.ok) return reply({ error: 'origin_not_allowed' }, 403, c.headers);
+  if (request.method !== 'POST' || !env.DB) return reply({ error: 'bad_request' }, 400, c.headers);
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (env.RATE_LIMITER_IP && typeof env.RATE_LIMITER_IP.limit === 'function') {
+    const { success } = await env.RATE_LIMITER_IP.limit({ key: 'access:' + ip });
+    if (!success) return reply({ error: 'rate_limited' }, 429, c.headers);
+  }
+  const b = await request.json().catch(() => ({}));
+  const uid = typeof b.uid === 'string' && /^[\w-]{8,64}$/.test(b.uid) ? b.uid : null;
+  if (!uid) return reply({ viewer: false }, 200, c.headers);
+  const v = await env.DB.prepare(`SELECT user_id FROM viewers WHERE user_id = ?`).bind(uid).first();
+  if (path === '/access/check') return reply({ viewer: !!v }, 200, c.headers);
+  if (path === '/access/session') {
+    if (!v) return reply({ error: 'forbidden', message: 'ليست لديك صلاحية دخول لوحة المشرف.' }, 403, c.headers);
+    const token = 'ses_' + randomToken();
+    const now = Date.now();
+    await env.DB.batch([
+      env.DB.prepare(`DELETE FROM sessions WHERE expires < ?`).bind(now),
+      env.DB.prepare(`INSERT INTO sessions (token_hash, user_id, created, expires) VALUES (?, ?, ?, ?)`).bind(await sha256hex(token), uid, now, now + 12 * 3600000),
+    ]);
+    return reply({ url: `${ADMIN_SITE}/#s=${token}` }, 200, c.headers);
+  }
+  return reply({ error: 'not_found' }, 404, c.headers);
+}
+
 async function handleAdmin(request, env, path) {
   const origin = request.headers.get('Origin') || '';
   const c = corsFor(origin, env.ADMIN_ORIGINS, 'GET, POST, OPTIONS');
@@ -254,14 +317,62 @@ async function handleAdmin(request, env, path) {
     if (!success) return reply({ error: 'rate_limited', message: 'محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى.' }, 429, c.headers);
   }
   const key = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!safeEqual(key, env.ADMIN_KEY)) {
-    return reply({ error: 'unauthorized', message: 'كلمة المرور غير صحيحة.' }, 401, c.headers);
+  const who = await adminAuth(env, key);
+  if (!who) {
+    return reply({ error: 'unauthorized', message: key.startsWith('ses_') ? 'انتهت صلاحية الدخول أو أُلغيت. ادخل من زر «لوحة المشرف» في الموقع مرة أخرى.' : 'كلمة المرور غير صحيحة.' }, 401, c.headers);
+  }
+  // صلاحيات المالك فقط (المشاهد يرى البيانات فقط)
+  const OWNER_ONLY = ['/admin/backup', '/admin/delete-user', '/admin/password', '/admin/devices', '/admin/devices/add', '/admin/devices/remove', '/admin/viewers', '/admin/viewers/add', '/admin/viewers/remove'];
+  if (OWNER_ONLY.includes(path) && who.role !== 'owner') {
+    return reply({ error: 'forbidden', message: 'هذه الصفحة للمالك فقط.' }, 403, c.headers);
   }
 
   const q = new URL(request.url).searchParams;
   const limit = Math.min(Math.max(intOrNull(q.get('limit')) || 200, 1), 1000);
   const DB = env.DB;
   try {
+    if (path === '/admin/me') return reply(who, 200, c.headers);
+
+    /* ---------- كلمة المرور وأجهزة المالك ---------- */
+    if (path === '/admin/password') return reply({ password: env.ADMIN_KEY }, 200, c.headers);
+    if (path === '/admin/devices') {
+      const r = await DB.prepare(`SELECT id, label, created, last_used FROM owner_devices ORDER BY created`).all();
+      return reply({ devices: r.results, current: who.device || null }, 200, c.headers);
+    }
+    if (path === '/admin/devices/add' && request.method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const token = 'dev_' + randomToken();
+      const id = randomToken().slice(0, 12);
+      await DB.prepare(`INSERT INTO owner_devices (id, token_hash, label, created) VALUES (?, ?, ?, ?)`)
+        .bind(id, await sha256hex(token), clip(String(b.label || 'جهاز').trim(), 60) || 'جهاز', Date.now()).run();
+      return reply({ id, token }, 200, c.headers); // الرمز يُرسل مرة واحدة فقط ويُحفظ في الجهاز
+    }
+    if (path === '/admin/devices/remove' && request.method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      await DB.prepare(`DELETE FROM owner_devices WHERE id = ?`).bind(clip(b.id, 40)).run();
+      return reply({ ok: true }, 200, c.headers);
+    }
+
+    /* ---------- من يدخل اللوحة بدون كلمة مرور (مشاهدة فقط) ---------- */
+    if (path === '/admin/viewers') {
+      const r = await DB.prepare(`SELECT v.user_id, v.created, u.name, u.role, u.grade, u.last_seen FROM viewers v LEFT JOIN users u ON u.id = v.user_id ORDER BY v.created`).all();
+      return reply({ viewers: r.results }, 200, c.headers);
+    }
+    if (path === '/admin/viewers/add' && request.method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const uid = clip(b.user_id, 64);
+      const u = uid && await DB.prepare(`SELECT id FROM users WHERE id = ?`).bind(uid).first();
+      if (!u) return reply({ error: 'no_user', message: 'هذا الشخص غير موجود.' }, 404, c.headers);
+      await DB.prepare(`INSERT OR IGNORE INTO viewers (user_id, created) VALUES (?, ?)`).bind(uid, Date.now()).run();
+      return reply({ ok: true }, 200, c.headers);
+    }
+    if (path === '/admin/viewers/remove' && request.method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      const uid = clip(b.user_id, 64);
+      await DB.batch([DB.prepare(`DELETE FROM viewers WHERE user_id = ?`).bind(uid), DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(uid)]);
+      return reply({ ok: true }, 200, c.headers);
+    }
+
     if (path === '/admin/stats') {
       const dayAgo = Date.now() - 86400000;
       const r = await DB.prepare(`SELECT
@@ -326,7 +437,8 @@ async function handleAdmin(request, env, path) {
       const b = await request.json().catch(() => ({}));
       const id = clip(b.id, 64);
       if (!id) return reply({ error: 'bad_id' }, 400, c.headers);
-      await DB.batch([DB.prepare(`DELETE FROM events WHERE user_id = ?`).bind(id), DB.prepare(`DELETE FROM users WHERE id = ?`).bind(id)]);
+      await DB.batch([DB.prepare(`DELETE FROM events WHERE user_id = ?`).bind(id), DB.prepare(`DELETE FROM users WHERE id = ?`).bind(id),
+        DB.prepare(`DELETE FROM viewers WHERE user_id = ?`).bind(id), DB.prepare(`DELETE FROM sessions WHERE user_id = ?`).bind(id)]);
       return reply({ ok: true }, 200, c.headers);
     }
     return reply({ error: 'not_found' }, 404, c.headers);

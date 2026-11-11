@@ -191,6 +191,45 @@
     if (!getUser()) await gate();
     updateUserBtn();
     log('visit', { title: document.title });
+    checkAdminAccess();
+  }
+
+  // زر «لوحة المشرف»: يظهر فقط لمن منحه المالك صلاحية المشاهدة، وعلى جهازه الذي سجّل منه
+  async function accessBase() {
+    try { const c = await json('data/config.json'); return (c.chatEndpoint || '').replace(/\/+$/, ''); } catch (e) { return ''; }
+  }
+  async function checkAdminAccess() {
+    const u = getUser();
+    const b = document.getElementById('admin-btn');
+    if (!u || !b) return;
+    const ck = 'bebras-admin-ok:' + u.id;
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(ck)); } catch (e) { /* */ }
+    let viewer = cached && Date.now() - cached.t < 10 * 60000 ? cached.v : null;
+    if (viewer === null) {
+      const base = await accessBase();
+      if (!base) return;
+      try {
+        const r = await fetch(base + '/access/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: u.id }) });
+        viewer = r.ok ? !!(await r.json()).viewer : false;
+        try { sessionStorage.setItem(ck, JSON.stringify({ v: viewer, t: Date.now() })); } catch (e) { /* */ }
+      } catch (e) { return; }
+    }
+    b.hidden = !viewer;
+  }
+  async function openAdmin() {
+    const u = getUser();
+    const b = document.getElementById('admin-btn');
+    if (!u) return;
+    b.disabled = true;
+    try {
+      const base = await accessBase();
+      const r = await fetch(base + '/access/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: u.id }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.url) { try { sessionStorage.removeItem('bebras-admin-ok:' + u.id); } catch (e) { /* */ } b.hidden = true; ask(j.message || 'ليست لديك صلاحية دخول لوحة المشرف.', { yes: 'حسنًا', no: '' }); return; }
+      location.href = j.url;
+    } catch (e) { ask('تعذّر الاتصال. حاول مرة أخرى.', { yes: 'حسنًا', no: '' }); }
+    finally { b.disabled = false; }
   }
 
   // ----- الرأس والتذييل -----
@@ -206,12 +245,14 @@
             ${NAV.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}
           </nav>
           <div class="header-tools">
+            <button class="user-btn admin-btn" id="admin-btn" type="button" hidden title="لوحة المشرف (مشاهدة)"><b aria-hidden="true">📊</b><span>لوحة المشرف</span></button>
             <button class="user-btn" id="user-btn" type="button" hidden aria-label="حسابي"><b aria-hidden="true">👤</b><span></span></button>
             <button class="icon-btn" id="theme-btn" type="button"></button>
             <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="القائمة" aria-expanded="false">☰</button>
           </div>
         </div>`;
       document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+      document.getElementById('admin-btn').addEventListener('click', openAdmin);
       document.getElementById('user-btn').addEventListener('click', () => {
         const u = getUser();
         if (!u) return;
