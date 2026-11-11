@@ -72,6 +72,11 @@ code { font-family: Consolas, "Courier New", monospace; background: var(--surfac
 .fig-img { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; background: #fff; border-radius: 12px; border: 1px solid var(--border); }
 .footer-logo { display: inline-block; background: #fff; border-radius: 12px; padding: 6px 12px; margin-bottom: 12px; border: 1px solid var(--border); }
 .footer-logo img { height: 44px; width: auto; display: block; }
+/* ===== إضافات الدروس ===== */
+.ct-skills { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tips-box ul { margin: 0; padding-inline-start: 1.3em; }
+.tips-box li { margin: .35em 0; }
+
 /* ===== شاشة الدخول (الاسم والصف) ===== */
 .gate { z-index: 100; backdrop-filter: blur(6px); }
 .gate-box { width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 12px; text-align: center; }

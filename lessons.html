@@ -21,7 +21,16 @@
 (async function () {
   const main = document.getElementById('main');
   const { esc, fmt } = App;
-  const Q_LETTERS = ['أ', 'ب', 'ج', 'د', 'هـ'];
+  const Q_LETTERS = ['أ', 'ب', 'جـ', 'د', 'هـ'];
+  // مثال محلول (نفس الشكل للمثال الأول والأمثلة الإضافية)
+  const solvedHTML = (S, i, title) => `<section class="box"><h2>${title}</h2>
+    <p>${fmt(S.story)}</p>${Fig.render(S.figure)}
+    <p class="q-ask"><strong>السؤال:</strong> ${fmt(S.question)}</p>
+    <button class="btn small no-print show-solved" type="button" data-s="${i}">اعرض الحل</button>
+    <div class="solved-body" data-sb="${i}" hidden><h3>الحل:</h3><ol class="steps">${S.steps.map((s) => `<li>${fmt(s)}</li>`).join('')}</ol>
+      ${Fig.render(S.answerFigure)}
+      <p><strong>✅ الجواب:</strong> ${fmt(S.answer)}</p></div>
+  </section>`;
   try {
     const skills = await App.skills();
     const id = App.param('id');
@@ -30,7 +39,7 @@
     if (!id) {
       document.title = 'الدروس | بيبراس تدريب موهبة';
       main.innerHTML = `<h1 class="page-title">📘 الدروس</h1>
-        <p class="lead">كل درس يُقرأ في 3 إلى 5 دقائق: شرح بسيط، مثال من الحياة، مثال محلول على طريقة بيبراس، خلاصة، واختبار قصير.</p>
+        <p class="lead">لطلاب الصف الأول والثاني والثالث المتوسط. كل درس فيه: شرح مبسّط ثم أعمق، مثال من الحياة، مثالان محلولان على طريقة بيبراس، أخطاء شائعة، نصائح للاختبار، خلاصة، واختبار قصير من 5 أسئلة.</p>
         <div class="grid grid-3">${skills.map((s, i) => `
           <a class="card skill-card" href="lessons.html?id=${s.id}"><span class="ic">${s.icon}</span>
             <div><h3>${i + 1}. ${esc(s.title)}</h3><p>${esc(s.desc)}</p>
@@ -56,36 +65,45 @@
         <a class="btn secondary small" href="summaries.html?id=${id}">📝 الملخص</a>
         <a class="btn secondary small" href="bank.html?skill=${id}">🧩 أسئلة هذه المهارة</a>
       </div>
+      ${L.ctSkills ? `<p class="ct-skills"><span class="muted">مهارات التفكير الحاسوبي (حسب كتاب موهبة):</span> ${L.ctSkills.map((c) => `<span class="badge">${esc(c)}</span>`).join(' ')}</p>` : ''}
       <p class="lead">${fmt(L.intro)}</p>
       ${(L.terms || []).map((t) => `<div class="term"><strong>${esc(t.t)}:</strong> ${fmt(t.d)}</div>`).join('')}
       ${(L.sections || []).map((s) => `<section><h2>${esc(s.h)}</h2><p>${fmt(s.p)}</p>${Fig.render(s.figure)}</section>`).join('')}
       <section class="box"><h2>🏠 مثال من الحياة اليومية</h2><p>${fmt(L.daily.text)}</p>${Fig.render(L.daily.figure)}</section>
-      <section class="box"><h2>🦫 مثال محلول على طريقة بيبراس</h2>
-        <p>${fmt(L.solved.story)}</p>${Fig.render(L.solved.figure)}
-        <p class="q-ask"><strong>السؤال:</strong> ${fmt(L.solved.question)}</p>
-        <button class="btn small no-print" type="button" id="show-solved">اعرض الحل</button>
-        <div id="solved" class="solved-body"><h3>الحل:</h3><ol class="steps">${L.solved.steps.map((s) => `<li>${fmt(s)}</li>`).join('')}</ol>
-          ${Fig.render(L.solved.answerFigure)}
-          <p><strong>✅ الجواب:</strong> ${fmt(L.solved.answer)}</p></div>
-      </section>
-      <section class="keypoints"><h2 style="margin-top:0">⭐ الخلاصة في 3 نقاط</h2><ol>${L.keypoints.map((k) => `<li>${fmt(k)}</li>`).join('')}</ol></section>
-      <section class="box no-print" id="mini"><h2>✏️ اختبر نفسك (3 أسئلة)</h2>
+      ${solvedHTML(L.solved, 0, '🦫 مثال محلول على طريقة بيبراس')}
+      ${(L.more || []).map((S, i) => solvedHTML(S, i + 1, `🦫 مثال محلول ${i + 2} (أصعب)`)).join('')}
+      ${L.mistakes ? `<section class="box tips-box"><h2>⚠️ أخطاء شائعة</h2><ul>${L.mistakes.map((m) => `<li>${fmt(m)}</li>`).join('')}</ul></section>` : ''}
+      ${L.tips ? `<section class="box tips-box"><h2>🎯 نصائح للاختبار</h2><ul>${L.tips.map((m) => `<li>${fmt(m)}</li>`).join('')}</ul></section>` : ''}
+      <section class="keypoints"><h2 style="margin-top:0">⭐ الخلاصة في ${L.keypoints.length} نقاط</h2><ol>${L.keypoints.map((k) => `<li>${fmt(k)}</li>`).join('')}</ol></section>
+      <section class="box no-print" id="mini"><h2>✏️ اختبر نفسك (${L.quiz.length} أسئلة)</h2>
         ${L.quiz.map((q, qi) => `<div class="mini-q" data-qi="${qi}"><p><strong>${qi + 1}.</strong> ${fmt(q.q)}</p>
           <div class="opts">${q.options.map((o, oi) => `<button type="button" class="opt" data-oi="${oi}"><span class="l">${Q_LETTERS[oi]}</span><span>${fmt(o)}</span></button>`).join('')}</div>
           <div class="fb"></div></div>`).join('')}
         <div id="mini-result"></div>
       </section>
+      <section class="box no-print" id="practice-more"></section>
       <div class="btn-row no-print" style="justify-content:space-between">
         ${prev ? `<a class="btn secondary" href="lessons.html?id=${prev.id}">→ ${esc(prev.title)}</a>` : '<span></span>'}
         ${next ? `<a class="btn" href="lessons.html?id=${next.id}">${esc(next.title)} ←</a>` : '<a class="btn" href="quizzes.html">إلى الاختبارات ←</a>'}
       </div>
     </article>`;
 
-    const solved = document.getElementById('solved');
-    solved.hidden = true;
-    document.getElementById('show-solved').addEventListener('click', (e) => { solved.hidden = false; e.target.remove(); });
-    // في الطباعة يظهر الحل دائمًا
-    window.addEventListener('beforeprint', () => { solved.hidden = false; });
+    main.querySelectorAll('.show-solved').forEach((b) => b.addEventListener('click', () => {
+      main.querySelector(`[data-sb="${b.dataset.s}"]`).hidden = false; b.remove();
+    }));
+    // في الطباعة تظهر الحلول دائمًا
+    window.addEventListener('beforeprint', () => { main.querySelectorAll('.solved-body').forEach((s) => { s.hidden = false; }); });
+
+    // تدرّب أكثر: أسئلة المهارة من كل صف + مهام كتاب موهبة (تُبنى تلقائيًا من بنك الأسئلة)
+    App.questions().then((all) => {
+      const mine = all.filter((q) => q.skill === id);
+      const box = document.getElementById('practice-more');
+      if (!mine.length) { box.remove(); return; }
+      const groups = Object.keys(App.LEVELS).map((lv) => [lv, mine.filter((q) => q.level === lv)]).filter(([, l]) => l.length);
+      box.innerHTML = `<h2>🧩 تدرّب أكثر على هذه المهارة (${mine.length} سؤالًا)</h2>
+        ${groups.map(([lv, l]) => `<p style="margin:.6em 0 .3em"><strong>${esc(App.LEVELS[lv])}:</strong></p>
+          <div class="btn-row">${l.map((q) => `<a class="btn small secondary" href="bank.html?skill=${id}&q=${q.id}">${p.solved[q.id] ? '✅ ' : ''}${esc(q.title)}</a>`).join('')}</div>`).join('')}`;
+    }).catch(() => { const b = document.getElementById('practice-more'); if (b) b.remove(); });
 
     const answered = {};
     document.querySelectorAll('.mini-q').forEach((box) => {
