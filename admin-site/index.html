@@ -129,18 +129,23 @@ td.num { font-variant-numeric: tabular-nums; }
   let USERS = [], EXAMS = [], EVENTS = [], TAB = 'people';
   async function dashboard() {
     app.innerHTML = `<header><h1>📊 لوحة المشرف</h1><span class="muted">بيبراس تدريب موهبة</span>
-        <span class="sp"><button class="btn sec" id="rf">🔄 تحديث</button><button class="btn sec" id="lo">خروج</button></span></header>
+        <span class="sp"><button class="btn sec" id="bk">💾 نسخة احتياطية</button><button class="btn sec" id="bkx">📊 كل السجلات (Excel)</button><button class="btn sec" id="rf">🔄 تحديث</button><button class="btn sec" id="lo">خروج</button></span></header>
+      <div id="bk-note"></div>
       <div class="stats" id="stats"><div class="card">جارٍ التحميل…</div></div>
       <div class="tabs" id="tabs">
         <button data-t="people" class="on">👥 الأشخاص</button>
         <button data-t="exams">📝 نتائج الاختبارات</button>
+        <button data-t="questions">📊 الأسئلة</button>
         <button data-t="activity">🕒 آخر النشاط</button>
       </div>
       <div id="view"></div>
       <aside class="drawer" id="drawer" hidden></aside>
       <p class="note">🔒 البيانات خاصة بالطلاب. لا تشاركها إلا مع المعلمين المعنيين. يمكنك حذف بيانات أي شخص من صفحته.</p>`;
     document.getElementById('lo').onclick = logout;
-    document.getElementById('rf').onclick = load;
+    document.getElementById('rf').onclick = () => { QSTATS = null; load(); };
+    document.getElementById('bk').onclick = () => backup('json');
+    document.getElementById('bkx').onclick = () => backup('csv');
+    backupNote();
     document.getElementById('tabs').onclick = (e) => {
       const b = e.target.closest('button'); if (!b) return;
       TAB = b.dataset.t;
@@ -168,11 +173,68 @@ td.num { font-variant-numeric: tabular-nums; }
     }
   }
 
+  /* ---------- النسخة الاحتياطية ---------- */
+  const BK = 'bebras-last-backup';
+  function backupNote() {
+    let last = null; try { last = Number(localStorage.getItem(BK)) || null; } catch (e) { /* */ }
+    const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+    const el = document.getElementById('bk-note');
+    if (!el) return;
+    el.innerHTML = days === null || days >= 7
+      ? `<div class="card" style="border-color:var(--warn);margin:8px 0">💾 ${days === null ? 'لم تأخذ نسخة احتياطية من هذا الجهاز بعد.' : `آخر نسخة احتياطية قبل ${days} يوم.`} يُنصح بنسخة كل أسبوع: اضغط «نسخة احتياطية» واحفظ الملفين في مكان آمن (ليس في GitHub، لأنه عام).</div>`
+      : '';
+  }
+  // ملف واحد في كل ضغطة (المتصفحات تمنع تنزيل عدة ملفات تلقائيًا مرة واحدة)
+  async function backup(kind) {
+    const b = document.getElementById(kind === 'json' ? 'bk' : 'bkx');
+    const label = b.textContent;
+    b.disabled = true; b.textContent = '⏳ جارٍ التجهيز…';
+    try {
+      const d = await api('/admin/backup');
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (kind === 'json') {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 1)], { type: 'application/json' }));
+        a.download = `bebras-backup-${stamp}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        try { localStorage.setItem(BK, String(Date.now())); } catch (e) { /* */ }
+        backupNote();
+        alert(`تم تنزيل النسخة الاحتياطية الكاملة: ${d.users.length} شخص و${d.events.length} سجل. احفظ الملف في مكان آمن.`);
+      } else csv([['المعرّف', 'الاسم', 'الفئة', 'الصف', 'النوع', 'الصفحة', 'المرجع', 'العنوان', 'صحيح؟', 'الدرجة', 'من', 'الوقت (ث)', 'تفاصيل', 'التاريخ'],
+        ...d.events.map((e) => { const u = d.users.find((x) => x.id === e.user_id) || {};
+          return [e.user_id, u.name, u.role === 'teacher' ? 'معلم' : 'طالب', GR[u.grade] || '', e.type, e.page, e.ref, e.title, e.ok == null ? '' : e.ok ? 'نعم' : 'لا', e.score ?? '', e.total ?? '', e.seconds ?? '', e.detail || '', when(e.ts)]; })], `bebras-records-${stamp}.csv`);
+    } catch (e) { alert(e.message); }
+    b.disabled = false; b.textContent = label;
+  }
+
+  /* ---------- إحصاءات الأسئلة ---------- */
+  const SITE = 'https://bebras-training.pages.dev';
+  const LV = { m1: 'أول متوسط', m2: 'ثاني متوسط', m3: 'ثالث متوسط', book1: 'كتاب موهبة ١', book2: 'كتاب موهبة ٢' };
+  const DF = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
+  let META = null, QSTATS = null;
+  async function loadQuestionStats() {
+    if (!META) {
+      const get = (p) => fetch(SITE + p).then((r) => { if (!r.ok) throw new Error('تعذّر تحميل الأسئلة من الموقع'); return r.json(); });
+      const idx = await get('/data/questions/index.json');
+      const [parts, skills] = await Promise.all([Promise.all(idx.files.map((f) => get('/data/questions/' + f))), get('/data/skills.json')]);
+      META = { qs: parts.flat(), skills: Object.fromEntries(skills.map((s) => [s.id, s])) };
+    }
+    if (!QSTATS) QSTATS = await api('/admin/questions');
+    const m = (arr) => Object.fromEntries((arr || []).map((r) => [r.qid, r]));
+    const pr = m(QSTATS.practice), seen = m(QSTATS.examSeen), wr = m(QSTATS.examWrong);
+    return META.qs.map((q) => {
+      const p = pr[q.id] || {}, s = (seen[q.id] || {}).n || 0, w = (wr[q.id] || {}).n || 0;
+      const tries = (p.attempts || 0) + s, right = (p.correct || 0) + (s - w);
+      return { q, pTries: p.attempts || 0, pRight: p.correct || 0, students: p.students || 0, eSeen: s, eRight: s - w, tries, right, pct: tries ? Math.round((100 * right) / tries) : null };
+    });
+  }
+
   function csv(rows, name) {
     const s = '﻿' + rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([s], { type: 'text/csv;charset=utf-8' }));
-    a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
 
   function render() {
@@ -230,6 +292,41 @@ td.num { font-variant-numeric: tabular-nums; }
             return [x.name, x.role === 'teacher' ? 'معلم' : 'طالب', GR[x.grade] || '', x.title, x.score, x.total, x.total ? Math.round((100 * x.score) / x.total) : '', x.seconds ?? '', (d.wrong || []).join(' '), when(x.ts)]; })], 'bebras-exams.csv');
       };
       draw();
+    } else if (TAB === 'questions') {
+      v.innerHTML = '<div class="card">جارٍ حساب الإحصاءات…</div>';
+      loadQuestionStats().then((rows) => {
+        if (TAB !== 'questions') return;
+        const bySkill = {};
+        rows.forEach((r) => { const k = r.q.skill; bySkill[k] = bySkill[k] || { tries: 0, right: 0 }; bySkill[k].tries += r.tries; bySkill[k].right += r.right; });
+        const skillRows = Object.entries(bySkill).filter(([, s]) => s.tries).map(([k, s]) => [k, Math.round((100 * s.right) / s.tries), s.tries]).sort((a, b) => a[1] - b[1]);
+        v.innerHTML = `<div class="card" style="margin-bottom:12px"><h3 style="margin:0 0 8px">🧠 المهارات من الأضعف إلى الأقوى</h3>${
+          skillRows.length ? skillRows.map(([k, p, n]) => `<div style="display:flex;gap:10px;align-items:center;margin:4px 0"><span style="min-width:220px">${esc((META.skills[k] || {}).icon || '')} ${esc((META.skills[k] || {}).title || k)}</span>
+            <span class="pct ${pctCls(p)}" style="min-width:48px">${p}%</span><span class="muted">${n} محاولة</span></div>`).join('')
+            : '<p class="muted" style="margin:0">لا توجد محاولات بعد. تظهر الإحصاءات عندما يتحقق الطلاب من إجاباتهم في بنك الأسئلة أو ينهون اختبارًا.</p>'}</div>
+          <div class="filters"><select id="fl"><option value="">كل المستويات</option>${Object.entries(LV).map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select>
+            <label><input type="checkbox" id="only"> المحاولة فقط</label>
+            <button class="btn sec" id="ex">⬇️ تصدير Excel (CSV)</button><span class="count" id="ct"></span></div>
+          <div class="tbl-wrap"><table><thead><tr><th>السؤال</th><th>المستوى</th><th>المهارة</th><th>الصعوبة</th><th>محاولات التدريب</th><th>في الاختبارات</th><th>نسبة الصحيح</th></tr></thead><tbody id="tb"></tbody></table></div>
+          <p class="note">الأسئلة مرتبة من الأصعب على الطلاب (أقل نسبة صحيح). اضغط على أي سؤال لفتحه في الموقع. إحصاءات الاختبارات تبدأ من 11 نوفمبر 2026.</p>`;
+        const draw = () => {
+          const lv = document.getElementById('fl').value, only = document.getElementById('only').checked;
+          const list = rows.filter((r) => (!lv || r.q.level === lv) && (!only || r.tries)).sort((a, b) => (a.pct ?? 101) - (b.pct ?? 101) || b.tries - a.tries);
+          document.getElementById('ct').textContent = `${list.length} سؤال`;
+          document.getElementById('tb').innerHTML = list.map((r) => `<tr class="click" data-q="${esc(r.q.id)}"><td><strong>${esc(r.q.title)}</strong></td><td>${esc(LV[r.q.level] || r.q.level)}</td>
+            <td>${esc((META.skills[r.q.skill] || {}).title || r.q.skill)}</td><td>${DF[r.q.difficulty] || ''}</td>
+            <td class="num">${r.pTries ? `${r.pRight} / ${r.pTries}` : '—'}</td><td class="num">${r.eSeen ? `${r.eRight} / ${r.eSeen}` : '—'}</td>
+            <td>${r.pct == null ? '<span class="muted">لا محاولات</span>' : `<span class="pct ${pctCls(r.pct)}">${r.pct}%</span>`}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">لا توجد أسئلة.</td></tr>';
+          return list;
+        };
+        ['fl', 'only'].forEach((id) => document.getElementById(id).addEventListener('input', draw));
+        document.getElementById('tb').onclick = (e) => { const tr = e.target.closest('tr[data-q]'); if (tr) window.open(`${SITE}/bank.html?q=${encodeURIComponent(tr.dataset.q)}`, '_blank', 'noopener'); };
+        document.getElementById('ex').onclick = () => {
+          const list = draw();
+          csv([['السؤال', 'المعرّف', 'المستوى', 'المهارة', 'الصعوبة', 'تدريب صحيح', 'تدريب كلي', 'اختبار صحيح', 'اختبار كلي', 'نسبة الصحيح %'],
+            ...list.map((r) => [r.q.title, r.q.id, LV[r.q.level] || r.q.level, (META.skills[r.q.skill] || {}).title || r.q.skill, DF[r.q.difficulty], r.pRight, r.pTries, r.eRight, r.eSeen, r.pct ?? ''])], 'bebras-questions.csv');
+        };
+        draw();
+      }).catch((e) => { v.innerHTML = `<div class="card err">${esc(e.message)}</div>`; });
     } else {
       v.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th></th><th>الاسم</th><th>الفئة</th><th>النشاط</th><th>الوقت</th></tr></thead><tbody id="tb">${
         EVENTS.length ? EVENTS.map((e) => `<tr class="click" data-id="${esc(e.user_id)}"><td>${icon(e)}</td><td><strong>${esc(e.name)}</strong></td><td>${who(e)}</td><td>${desc(e)}</td><td class="muted" title="${esc(when(e.ts))}">${ago(e.ts)}</td></tr>`).join('')

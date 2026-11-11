@@ -1,0 +1,4 @@
+# إعدادات Cloudflare Pages: يسمح للوحة المشرف فقط بقراءة ملفات البيانات (عناوين الأسئلة للإحصاءات)
+/data/*
+  Access-Control-Allow-Origin: https://bebras-admin.pages.dev
+  Vary: Origin

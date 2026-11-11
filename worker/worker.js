@@ -301,6 +301,27 @@ async function handleAdmin(request, env, path) {
         WHERE e.type = 'exam' ORDER BY e.ts DESC LIMIT ?`).bind(limit).all();
       return reply({ exams: r.results }, 200, c.headers);
     }
+    if (path === '/admin/questions') {
+      // إحصاءات كل سؤال: محاولات التدريب ونسبة الصحيح، وظهوره في الاختبارات ونسبة الخطأ
+      // (الاختبارات تُحسب فقط إذا سُجّلت قائمة أسئلتها qs، أي من 11 نوفمبر 2026)
+      const [pr, seen, wrong] = await DB.batch([
+        DB.prepare(`SELECT ref AS qid, COUNT(*) AS attempts, SUM(ok) AS correct, COUNT(DISTINCT user_id) AS students
+          FROM events WHERE type = 'practice' AND ref IS NOT NULL GROUP BY ref`),
+        DB.prepare(`SELECT j.value AS qid, COUNT(*) AS n FROM events e, json_each(json_extract(e.detail, '$.qs')) j
+          WHERE e.type = 'exam' AND json_valid(e.detail) GROUP BY j.value`),
+        DB.prepare(`SELECT j.value AS qid, COUNT(*) AS n FROM events e, json_each(json_extract(e.detail, '$.wrong')) j
+          WHERE e.type = 'exam' AND json_valid(e.detail) AND json_extract(e.detail, '$.qs') IS NOT NULL GROUP BY j.value`),
+      ]);
+      return reply({ practice: pr.results, examSeen: seen.results, examWrong: wrong.results }, 200, c.headers);
+    }
+    if (path === '/admin/backup') {
+      // نسخة احتياطية كاملة (كل الأشخاص وكل السجلات)
+      const [u, e] = await DB.batch([
+        DB.prepare(`SELECT * FROM users ORDER BY first_seen`),
+        DB.prepare(`SELECT * FROM events ORDER BY id LIMIT 100000`),
+      ]);
+      return reply({ exported_at: new Date().toISOString(), users: u.results, events: e.results }, 200, c.headers);
+    }
     if (path === '/admin/delete-user' && request.method === 'POST') {
       const b = await request.json().catch(() => ({}));
       const id = clip(b.id, 64);

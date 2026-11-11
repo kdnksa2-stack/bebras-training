@@ -46,6 +46,7 @@
       <div class="btn-row">
         <a class="btn small" href="quizzes.html?id=book1">اختبار المستوى الأول</a>
         <a class="btn small" href="quizzes.html?id=book2">اختبار المستوى الثاني</a>
+        <a class="btn small accent" href="quizzes.html?id=sim-book">🏆 محاكاة المسابقة (60 دقيقة)</a>
         <a class="btn small secondary" href="bank.html?level=book1">تدرّب مهمة مهمة</a>
         <a class="btn small ghost" href="assets/docs/bebras-activity-book.pdf" download="كتاب-نشاط-بيبراس-موهبة.pdf">⬇️ تحميل الكتاب (PDF)</a>
       </div>
@@ -85,9 +86,9 @@
 
     document.getElementById('levels').innerHTML = Object.entries(App.LEVELS).filter(([id]) => App.GRADE_LEVELS.includes(id)).map(([id, name]) => {
       const n = qs.filter((q) => q.level === id).length;
-      const z = quizzes.filter((x) => x.level === id);
+      const z = quizzes.filter((x) => x.level === id && !x.sim); const sim = quizzes.find((x) => x.level === id && x.sim);
       return `<div class="card"><h3 style="margin-top:0">${name}</h3><p class="muted">${n} سؤالًا • ${z.length === 1 ? 'اختبار واحد' : z.length + ' اختبارات'}</p>
-        <div class="btn-row"><a class="btn small" href="bank.html?level=${id}">الأسئلة</a>${z[0] ? `<a class="btn small secondary" href="quizzes.html?id=${z[0].id}">اختبار</a>` : ''}</div></div>`;
+        <div class="btn-row"><a class="btn small" href="bank.html?level=${id}">الأسئلة</a>${z[0] ? `<a class="btn small secondary" href="quizzes.html?id=${z[0].id}">اختبار</a>` : ''}${sim ? `<a class="btn small accent" href="quizzes.html?id=${sim.id}">🏆 محاكاة</a>` : ''}</div></div>`;
     }).join('');
 
     document.getElementById('skills').innerHTML = skills.map((s) => `

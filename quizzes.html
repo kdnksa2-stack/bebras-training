@@ -33,17 +33,46 @@
   ALL.forEach((q) => { byId[q.id] = q; });
 
   function quizFromDef(def) {
+    // محاكاة بأسئلة عشوائية من الصف: عدد محدد من كل صعوبة
+    if (def.sim && def.sim.pick) {
+      const qs = Object.entries(def.sim.pick).flatMap(([d, n]) => App.shuffle(ALL.filter((q) => q.level === def.level && q.difficulty === d)).slice(0, n));
+      return { ...def, qs: App.sortByDifficulty(qs) };
+    }
     const qs = def.questions.map((id) => byId[id]).filter(Boolean);
+    // في المحاكاة: كل مستوى من السهل للصعب، والمستوى الأول قبل الثاني (مثل الكتاب)
+    if (def.sim) {
+      const lvls = [...new Set(qs.map((q) => q.level))];
+      return { ...def, qs: lvls.flatMap((lv) => App.sortByDifficulty(qs.filter((q) => q.level === lv))) };
+    }
     return { ...def, qs: App.sortByDifficulty(qs) };
+  }
+  // نقاط السؤال في المحاكاة حسب مستواه وصعوبته
+  const simPoints = (z, q) => (z.sim && z.sim.points && z.sim.points[q.level] ? z.sim.points[q.level][q.difficulty] || 0 : 1);
+  const DIFF_AR = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
+  function setSimMode(on) {
+    document.body.classList.toggle('sim-mode', on);
+    const h = document.getElementById('helper');
+    document.body.classList.toggle('helper-open', !on && !!h && !h.hidden);
   }
 
   /* ---------- القائمة + المولّد ---------- */
   function showList() {
     stopTimer();
+    setSimMode(false);
     window.onbeforeunload = null;
     const p = App.progress.get();
+    const sims = QUIZZES.filter((z) => z.sim);
+    const simSec = sims.length ? `<h2>🏆 محاكاة المسابقة</h2>
+      <p class="muted">مثل المسابقة الحقيقية: وقت محدد، ونقاط حسب صعوبة كل سؤال، والنتيجة من 100، وبدون المساعد الذكي.</p>
+      <div class="grid grid-2">${sims.map((z) => {
+        const r = p.quizzes[z.id];
+        return `<div class="card sim-card"><h3 style="margin-top:0">${esc(z.title)}</h3><p class="muted" style="margin:0">${esc(z.desc || '')}</p>
+          <p style="margin:.4em 0"><span class="badge">⏱️ ${z.sim.minutes} دقيقة</span> <span class="badge">${z.sim.pick ? Object.values(z.sim.pick).reduce((a, b) => a + b, 0) : z.questions.length} سؤالًا</span>
+          ${r ? `<span class="badge done">أفضل نتيجة: ${r.best}/${r.total}</span>` : ''}</p>
+          <div class="btn-row"><a class="btn small accent" href="quizzes.html?id=${z.id}">ابدأ المحاكاة</a></div></div>`;
+      }).join('')}</div>` : '';
     const groups = Object.entries(App.LEVELS).map(([lv, name]) => {
-      const zs = QUIZZES.filter((z) => z.level === lv);
+      const zs = QUIZZES.filter((z) => z.level === lv && !z.sim);
       return `<h2>${name}</h2><div class="grid grid-2">${zs.map((z) => {
         const r = p.quizzes[z.id];
         return `<div class="card"><h3 style="margin-top:0">${esc(z.title)}</h3><p class="muted" style="margin:0">${esc(z.desc || '')}</p>
@@ -64,6 +93,7 @@
         <div class="btn-row"><button class="btn accent" type="button" id="g-go">أنشئ الاختبار</button><button class="btn secondary" type="button" id="g-print">🖨️ أنشئ واطبع</button></div>
         <div id="g-msg"></div>
       </section>
+      ${simSec}
       ${groups}`;
     main.querySelectorAll('[data-print]').forEach((b) => b.addEventListener('click', () => printDialog(quizFromDef(QUIZZES.find((z) => z.id === b.dataset.print)))));
     document.getElementById('g-all').addEventListener('click', () => {
@@ -90,7 +120,27 @@
   /* ---------- قبل البدء ---------- */
   function showIntro(z) {
     stopTimer();
+    setSimMode(false);
     window.scrollTo(0, 0);
+    if (z.sim) {
+      // جدول النقاط حسب المستوى والصعوبة
+      const rows = [...new Set(z.qs.map((q) => q.level))].flatMap((lv) => ['easy', 'medium', 'hard'].map((d) => {
+        const n = z.qs.filter((q) => q.level === lv && q.difficulty === d).length;
+        return n ? `<tr><td>${esc(App.LEVELS[lv])}</td><td>${DIFF_AR[d]}</td><td>${n}</td><td>${simPoints(z, { level: lv, difficulty: d })}</td></tr>` : '';
+      })).join('');
+      const max = z.qs.reduce((s, q) => s + simPoints(z, q), 0);
+      main.innerHTML = `<p><a href="quizzes.html">← كل الاختبارات</a></p>
+        <div class="card"><h1 style="margin-top:0">🏆 ${esc(z.title)}</h1>
+          <p><span class="badge">⏱️ ${z.sim.minutes} دقيقة</span> <span class="badge">${z.qs.length} سؤالًا</span> <span class="badge">النتيجة من ${max}</span></p>
+          <table><thead><tr><th>المستوى</th><th>الصعوبة</th><th>عدد الأسئلة</th><th>نقاط السؤال</th></tr></thead><tbody>${rows}</tbody></table>
+          <ul class="muted"><li>الوقت يبدأ فور الضغط على «ابدأ»، وعند انتهائه يُصحَّح الاختبار تلقائيًا.</li>
+            <li>كل سؤال صحيح يعطيك نقاطه حسب صعوبته، والخطأ أو الفارغ صفر.</li>
+            <li>المساعد الذكي <strong>غير متاح</strong> في المحاكاة، مثل المسابقة الحقيقية.</li>
+            ${z.sim.pick ? '<li>الأسئلة تُختار عشوائيًا في كل مرة، فكل محاولة مختلفة.</li>' : ''}</ul>
+          <div class="btn-row"><button class="btn accent" id="start" type="button">ابدأ المحاكاة</button></div></div>`;
+      document.getElementById('start').addEventListener('click', () => start(z, z.sim.minutes));
+      return;
+    }
     const sk = [...new Set(z.qs.map((q) => q.skill))].map((s) => SKILLMAP[s] && SKILLMAP[s].icon + ' ' + SKILLMAP[s].title).join(' • ');
     main.innerHTML = `<p><a href="quizzes.html">← كل الاختبارات</a></p>
       <div class="card"><h1 style="margin-top:0">${esc(z.title)}</h1>
@@ -108,6 +158,7 @@
   /* ---------- تشغيل الاختبار ---------- */
   function start(z, minutes) {
     S = { z, resp: z.qs.map(() => undefined), flags: z.qs.map(() => false), cur: 0, endAt: minutes > 0 ? Date.now() + minutes * 60000 : null, timer: null, startedAt: Date.now() };
+    setSimMode(!!z.sim);
     window.onbeforeunload = () => 'الاختبار لم ينتهِ بعد.';
     main.innerHTML = `<div class="quiz-bar">
         <strong>${esc(z.title)}</strong>
@@ -170,13 +221,23 @@
   function finish() {
     stopTimer();
     window.onbeforeunload = null;
+    setSimMode(false);
     const results = S.z.qs.map((q, i) => Q.isCorrect(q, S.resp[i]));
-    const score = results.filter(Boolean).length, total = results.length;
+    const correct = results.filter(Boolean).length, count = results.length;
+    // في المحاكاة: الدرجة بالنقاط من 100، وفي الاختبار العادي: عدد الإجابات الصحيحة
+    const isSim = !!S.z.sim;
+    const score = isSim ? S.z.qs.reduce((s, q, i) => s + (results[i] ? simPoints(S.z, q) : 0), 0) : correct;
+    const total = isSim ? S.z.qs.reduce((s, q) => s + simPoints(S.z, q), 0) : count;
     if (S.z.id !== 'custom') App.progress.saveQuiz(S.z.id, score, total);
     App.log('exam', {
       ref: S.z.id, title: S.z.title, score, total,
       seconds: Math.round((Date.now() - S.startedAt) / 1000),
-      detail: { wrong: S.z.qs.filter((q, i) => !results[i]).map((q) => q.id), unanswered: S.resp.filter((r, i) => !Q.isAnswered(S.z.qs[i], r)).length },
+      detail: {
+        qs: S.z.qs.map((q) => q.id),
+        wrong: S.z.qs.filter((q, i) => !results[i]).map((q) => q.id),
+        unanswered: S.resp.filter((r, i) => !Q.isAnswered(S.z.qs[i], r)).length,
+        ...(isSim ? { sim: 1, correct } : {}),
+      },
     });
     S.z.qs.forEach((q, i) => { if (results[i]) App.progress.markSolved(q.id); });
     const pct = Math.round((score / total) * 100);
@@ -184,7 +245,8 @@
     const wrongSkills = [...new Set(S.z.qs.filter((q, i) => !results[i]).map((q) => q.skill))];
     window.scrollTo(0, 0);
     main.innerHTML = `<div class="card center"><h1 style="margin-top:0">نتيجتك</h1>
-        <p class="score-big">${score} / ${total}</p><p><strong>${pct}%</strong></p><p>${msg}</p>
+        <p class="score-big">${score} / ${total}</p><p><strong>${isSim ? 'نقطة' : pct + '%'}</strong></p>
+        ${isSim ? `<p class="muted">الإجابات الصحيحة: ${correct} من ${count} • الوقت: ${Math.floor((Date.now() - S.startedAt) / 60000)} دقيقة</p>` : ''}<p>${msg}</p>
         <div class="btn-row" style="justify-content:center">
           <button class="btn" type="button" id="rv-wrong" ${score === total ? 'disabled' : ''}>راجع الأخطاء</button>
           <button class="btn secondary" type="button" id="rv-all">راجع كل الأسئلة</button>

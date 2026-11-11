@@ -141,3 +141,22 @@ python -m http.server 8000
 - **لوحة المشرف:** <https://bebras-admin.pages.dev> (كودها في [`admin-site/`](admin-site/index.html)). تحتاج كلمة المرور المحفوظة كـ Secret باسم `ADMIN_KEY`، ولا تقبل الطلبات إلا من النطاقات في `ADMIN_ORIGINS`.
 - لتغيير كلمة المرور: من مجلد `worker` شغّل `npx wrangler secret put ADMIN_KEY` واكتب كلمة جديدة.
 - من اللوحة: بحث وتصفية حسب الصف أو المعلمين، صفحة لكل شخص بكل نشاطه، تصدير Excel (CSV)، وحذف بيانات أي شخص نهائيًا.
+
+---
+
+## 6) محاكاة المسابقة
+- في `data/quizzes.json` أي اختبار فيه `sim` يظهر في قسم «🏆 محاكاة المسابقة»: وقت ثابت، نقاط حسب الصعوبة، والنتيجة من 100، والمساعد الذكي مخفي.
+- `sim.minutes`: الوقت. `sim.points`: نقاط كل مستوى وصعوبة، مثل `{"m2":{"easy":4,"medium":6,"hard":10}}`.
+- `sim.pick` (اختياري): عدد الأسئلة العشوائية من كل صعوبة في مستوى الاختبار، مثل `{"easy":5,"medium":5,"hard":5}`. بدونها تُستخدم قائمة `questions` كما هي (مثل محاكاة كتاب موهبة: 60 دقيقة، 2/3/4 و6/7/8 نقاط).
+- تأكد أن مجموع النقاط 100 عند تعديل الأعداد.
+
+## 7) إحصاءات الأسئلة والنسخ الاحتياطي (لوحة المشرف)
+- تبويب **«📊 الأسئلة»**: لكل سؤال عدد محاولات التدريب وظهوره في الاختبارات ونسبة الصحيح، مرتبة من الأصعب على الطلاب، مع ترتيب المهارات من الأضعف. تقرأ اللوحة عناوين الأسئلة من الموقع، ولذلك ملف [`_headers`](_headers) يسمح للوحة فقط بقراءة `/data/*`.
+- زر **«💾 نسخة احتياطية»**: ينزّل كل البيانات (ملف JSON كامل + ملف Excel). خذ نسخة كل أسبوع واحفظها في مكان آمن (**ليس** في GitHub لأنه عام). وتحتفظ Cloudflare D1 أيضًا بإمكانية الاسترجاع لنقطة زمنية سابقة (Time Travel).
+
+## 8) النشر التلقائي من GitHub
+- الملف [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) ينشر الموقع ولوحة المشرف والمساعد على Cloudflare عند كل push إلى `main`.
+- يحتاج سرّين في GitHub (**Settings → Secrets and variables → Actions → New repository secret**):
+  - `CLOUDFLARE_ACCOUNT_ID`: رقم الحساب.
+  - `CLOUDFLARE_API_TOKEN`: من Cloudflare → **My Profile → API Tokens → Create Token → Custom token** بالصلاحيات (Account): **Cloudflare Pages: Edit**، **Workers Scripts: Edit**، **D1: Edit**.
+- بدون السرّين لا يفشل شيء، ويظهر تنبيه فقط. للنشر اليدوي: انسخ `*.html` و`_headers` و`assets` و`data` إلى مجلد ثم `npx wrangler pages deploy <المجلد> --project-name bebras-training`.
