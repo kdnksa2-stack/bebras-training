@@ -165,6 +165,9 @@ main { padding: 18px 0 40px; min-height: 70vh; }
 .footer-links a { display: inline-block; padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); text-decoration: none; }
 .footer-links a:hover { border-color: currentColor; }
 .footer-note { margin: 0 0 14px; }
+.footer-contact { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 10px; margin-top: 12px; }
+.footer-contact a { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); text-decoration: none; font-weight: 700; }
+.footer-contact a:hover { border-color: currentColor; }
 .footer-credit { margin: 0; font-size: 1rem; }
 .footer-credit .creator { font-family: 'Aref Ruqaa', 'Tajawal', serif; font-weight: 700; font-size: 1.6rem; color: var(--text, inherit); margin-inline-start: .3em; line-height: 1.6; }
 
