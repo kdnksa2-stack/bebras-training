@@ -108,7 +108,7 @@
 
   /* ---------- واجهات التفاعل ---------- */
   function mountMCQ(q, box, st, locked) {
-    box.innerHTML = `<div class="opts" role="radiogroup">${q.options.map((o, i) => `
+    box.innerHTML = `<p class="choose">اختر الإجابة الصحيحة:</p><div class="opts" role="radiogroup" aria-label="اختر الإجابة الصحيحة">${q.options.map((o, i) => `
       <button type="button" class="opt" role="radio" aria-checked="false" data-i="${i}"><span class="l">${LETTERS[i]}</span>
         <span>${fmt(optText(o))}${typeof o === 'object' && o.figure ? Fig.render(o.figure) : ''}</span></button>`).join('')}</div>`;
     const btns = [...box.querySelectorAll('.opt')];
@@ -329,7 +329,7 @@
     const fig = Fig.render(q.figure);
     switch (q.type) {
       case 'mcq':
-        body = `<ul class="opts-p">${q.options.map((o, i) => `<li>${LETTERS[i]}) ${fmt(optText(o))}${typeof o === 'object' && o.figure ? Fig.render(o.figure) : ''}</li>`).join('')}</ul>`;
+        body = `<p><strong>اختر الإجابة الصحيحة:</strong></p><ul class="opts-p">${q.options.map((o, i) => `<li>${LETTERS[i]}) ${fmt(optText(o))}${typeof o === 'object' && o.figure ? Fig.render(o.figure) : ''}</li>`).join('')}</ul>`;
         break;
       case 'short':
         body = `<div>الإجابة: ............................................ ${q.unit ? esc(q.unit) : ''}</div>`;

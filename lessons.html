@@ -77,7 +77,7 @@
       <section class="keypoints"><h2 style="margin-top:0">⭐ الخلاصة في ${L.keypoints.length} نقاط</h2><ol>${L.keypoints.map((k) => `<li>${fmt(k)}</li>`).join('')}</ol></section>
       <section class="box no-print" id="mini"><h2>✏️ اختبر نفسك (${L.quiz.length} أسئلة)</h2>
         ${L.quiz.map((q, qi) => `<div class="mini-q" data-qi="${qi}"><p><strong>${qi + 1}.</strong> ${fmt(q.q)}</p>
-          <div class="opts">${q.options.map((o, oi) => `<button type="button" class="opt" data-oi="${oi}"><span class="l">${Q_LETTERS[oi]}</span><span>${fmt(o)}</span></button>`).join('')}</div>
+          <p class="choose">اختر الإجابة الصحيحة:</p><div class="opts">${q.options.map((o, oi) => `<button type="button" class="opt" data-oi="${oi}"><span class="l">${Q_LETTERS[oi]}</span><span>${fmt(o)}</span></button>`).join('')}</div>
           <div class="fb"></div></div>`).join('')}
         <div id="mini-result"></div>
       </section>

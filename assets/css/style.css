@@ -424,3 +424,5 @@ label { cursor: pointer; }
 .ask-box p { margin: 0; line-height: 1.8; }
 .ask-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 @media print { .ask-overlay { display: none !important; } }
+
+.choose { margin: 4px 0 8px; font-weight: 800; color: var(--muted); }
