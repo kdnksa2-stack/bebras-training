@@ -207,7 +207,7 @@ async function handleLog(request, env) {
   arr.push(now); logMemory.set(ip, arr); if (logMemory.size > 5000) logMemory.clear();
 
   const raw = await request.text();
-  if (raw.length > 4000) return reply({ error: 'too_large' }, 413, c.headers);
+  if (raw.length > 8000) return reply({ error: 'too_large' }, 413, c.headers);
   let b; try { b = JSON.parse(raw); } catch (e) { return reply({ error: 'bad_json' }, 400, c.headers); }
   const u = b && b.user;
   if (!u || typeof u.id !== 'string' || !/^[\w-]{8,64}$/.test(u.id)) return reply({ error: 'bad_user' }, 400, c.headers);
@@ -224,7 +224,7 @@ async function handleLog(request, env) {
       env.DB.prepare(`INSERT INTO events (user_id, ts, type, page, ref, title, ok, score, total, seconds, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .bind(u.id, now, b.type, clip(b.page, 120), clip(b.ref, 40), clip(b.title, 120),
           b.ok === true ? 1 : b.ok === false ? 0 : null, intOrNull(b.score), intOrNull(b.total), intOrNull(b.seconds),
-          b.detail ? clip(JSON.stringify(b.detail), 1500) : null),
+          b.detail ? clip(JSON.stringify(b.detail), 4000) : null),
     ]);
     return reply({ ok: true }, 200, c.headers);
   } catch (e) {

@@ -313,7 +313,7 @@
           return;
         }
         const ok = isCorrect(q, st.resp);
-        if (App.log) App.log('practice', { ref: q.id, title: q.title, ok });
+        if (App.log) App.log('practice', { ref: q.id, title: q.title, ok, detail: typeof st.resp === 'number' ? { choice: st.resp } : undefined });
         fb.className = 'q-feedback feedback ' + (ok ? 'ok' : 'no');
         fb.textContent = ok ? '🎉 أحسنت! إجابة صحيحة.' : 'ليست صحيحة بعد. جرّب مرة أخرى، أو افتح التلميح، أو اعرض الحل.';
         if (st.markResult) st.markResult(ok ? true : null);

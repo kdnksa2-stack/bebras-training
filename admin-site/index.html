@@ -68,6 +68,14 @@ td.num { font-variant-numeric: tabular-nums; }
 .tl .ic { width: 26px; text-align: center; }
 .tl .tm { color: var(--muted); font-size: .82rem; }
 .note { font-size: .85rem; color: var(--muted); margin-top: 16px; }
+.ex-list { list-style: none; padding: 0; margin: 8px 0 0; }
+.ex-q { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.ex-q.w { border-color: var(--bad); background: var(--bad-soft); }
+.ex-h { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.ex-h a { margin-inline-start: auto; font-size: .85rem; }
+.ex-a, .ex-c { margin-top: 4px; }
+.ex-c { color: var(--ok); }
+.only-w .ex-q.r { display: none; }
 .acc { margin-bottom: 14px; }
 .acc h3 { margin: 0 0 6px; }
 .acc input, .acc select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); min-width: 220px; }
@@ -246,13 +254,18 @@ td.num { font-variant-numeric: tabular-nums; }
   const LV = { m1: 'أول متوسط', m2: 'ثاني متوسط', m3: 'ثالث متوسط', book1: 'كتاب موهبة ١', book2: 'كتاب موهبة ٢' };
   const DF = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
   let META = null, QSTATS = null;
-  async function loadQuestionStats() {
+  async function loadMeta() {
     if (!META) {
       const get = (p) => fetch(SITE + p).then((r) => { if (!r.ok) throw new Error('تعذّر تحميل الأسئلة من الموقع'); return r.json(); });
       const idx = await get('/data/questions/index.json');
       const [parts, skills] = await Promise.all([Promise.all(idx.files.map((f) => get('/data/questions/' + f))), get('/data/skills.json')]);
       META = { qs: parts.flat(), skills: Object.fromEntries(skills.map((s) => [s.id, s])) };
+      META.byId = Object.fromEntries(META.qs.map((q) => [q.id, q]));
     }
+    return META;
+  }
+  async function loadQuestionStats() {
+    await loadMeta();
     if (!QSTATS) QSTATS = await api('/admin/questions');
     const m = (arr) => Object.fromEntries((arr || []).map((r) => [r.qid, r]));
     const pr = m(QSTATS.practice), seen = m(QSTATS.examSeen), wr = m(QSTATS.examWrong);
@@ -386,14 +399,14 @@ td.num { font-variant-numeric: tabular-nums; }
         document.getElementById('tb').innerHTML = list.length ? list.map((x) => {
           const p = x.total ? Math.round((100 * x.score) / x.total) : 0;
           let d = {}; try { d = JSON.parse(x.detail || '{}'); } catch (e) { /* */ }
-          return `<tr class="click" data-id="${esc(x.user_id)}"><td><strong>${esc(x.name)}</strong></td><td>${who(x)}</td><td>${esc(x.title)}</td>
+          return `<tr class="click" data-ev="${esc(x.id)}" title="اضغط لمراجعة إجاباته"><td><strong>${esc(x.name)}</strong></td><td>${who(x)}</td><td>${esc(x.title)} <span class="muted">🔍</span></td>
             <td class="num">${x.score} / ${x.total}</td><td><span class="pct ${pctCls(p)}">${p}%</span></td><td class="num">${mmss(x.seconds)}</td>
             <td class="num">${d.unanswered ?? '—'}</td><td class="muted">${esc(when(x.ts))}</td></tr>`;
         }).join('') : '<tr><td colspan="8" class="empty">لا توجد نتائج اختبارات بعد.</td></tr>';
         return list;
       };
       ['fg', 'fz'].forEach((id) => document.getElementById(id).addEventListener('input', draw));
-      document.getElementById('tb').onclick = (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) person(tr.dataset.id); };
+      document.getElementById('tb').onclick = (e) => { const tr = e.target.closest('tr[data-ev]'); if (tr) examDetail(EXAMS.find((x) => String(x.id) === tr.dataset.ev)); };
       document.getElementById('ex').onclick = () => {
         const list = draw();
         csv([['الاسم', 'الفئة', 'الصف', 'الاختبار', 'الدرجة', 'من', 'النسبة %', 'الوقت (ث)', 'الأسئلة الخاطئة', 'التاريخ'],
@@ -440,16 +453,66 @@ td.num { font-variant-numeric: tabular-nums; }
       v.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th></th><th>الاسم</th><th>الفئة</th><th>النشاط</th><th>الوقت</th></tr></thead><tbody id="tb">${
         EVENTS.length ? EVENTS.map((e) => `<tr class="click" data-id="${esc(e.user_id)}"><td>${icon(e)}</td><td><strong>${esc(e.name)}</strong></td><td>${who(e)}</td><td>${desc(e)}</td><td class="muted" title="${esc(when(e.ts))}">${ago(e.ts)}</td></tr>`).join('')
           : '<tr><td colspan="5" class="empty">لا يوجد نشاط بعد.</td></tr>'}</tbody></table></div>`;
-      document.getElementById('tb').onclick = (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) person(tr.dataset.id); };
+      document.getElementById('tb').onclick = (e) => { const b = e.target.closest('[data-exam]'); if (b) { examDetail(EVENTS.find((x) => String(x.id) === b.dataset.exam)); return; } const tr = e.target.closest('tr[data-id]'); if (tr) person(tr.dataset.id); };
     }
   }
 
   const icon = (e) => ({ visit: '👁️', practice: e.ok ? '✅' : '❌', exam: '📝' }[e.type] || '•');
   function desc(e) {
     if (e.type === 'visit') return `زار صفحة <strong>${esc(PAGES[e.page] || e.page)}</strong>`;
-    if (e.type === 'practice') return `تدريب: ${esc(e.title || e.ref)} <span class="${e.ok ? 'ok' : 'no'}">${e.ok ? 'صحيح' : 'خطأ'}</span>`;
+    if (e.type === 'practice') {
+      let d = {}; try { d = JSON.parse(e.detail || '{}'); } catch (x) { /* */ }
+      return `تدريب: ${esc(e.title || e.ref)} <span class="${e.ok ? 'ok' : 'no'}">${e.ok ? 'صحيح' : 'خطأ'}</span>${Number.isInteger(d.choice) ? ` <span class="muted">(اختار ${LETTERS[d.choice] || d.choice + 1})</span>` : ''}`;
+    }
     const p = e.total ? Math.round((100 * e.score) / e.total) : 0;
-    return `اختبار: ${esc(e.title || e.ref)}: <span class="pct ${pctCls(p)}">${e.score}/${e.total} (${p}%)</span> <span class="muted">في ${mmss(e.seconds)}</span>`;
+    return `اختبار: ${esc(e.title || e.ref)}: <span class="pct ${pctCls(p)}">${e.score}/${e.total} (${p}%)</span> <span class="muted">في ${mmss(e.seconds)}</span> <button class="btn sec" style="padding:2px 10px" data-exam="${esc(e.id)}">🔍 مراجعة إجاباته</button>`;
+  }
+
+  /* ---------- مراجعة إجابات اختبار: اختيار الطالب مقابل الصحيح في كل سؤال ---------- */
+  const LETTERS = ['أ', 'ب', 'جـ', 'د', 'هـ'];
+  const optText = (o) => String(typeof o === 'object' && o ? o.text || '' : o ?? '').replace(/\*\*|`/g, '');
+  async function examDetail(e) {
+    if (!e) return;
+    const d = document.getElementById('drawer');
+    d.hidden = false;
+    let det = {}; try { det = JSON.parse(e.detail || '{}'); } catch (x) { /* */ }
+    const p = e.total ? Math.round((100 * e.score) / e.total) : 0;
+    const back = e.user_id;
+    d.innerHTML = `<div class="hd"><div><h2>📝 ${esc(e.title || e.ref)}</h2>
+        <div>${esc(e.name || '')} ${who(e)} <span class="pct ${pctCls(p)}">${e.score}/${e.total} (${p}%)</span>
+        <span class="muted">• الوقت ${mmss(e.seconds)} • ${esc(when(e.ts))}</span></div></div>
+      <span style="margin-inline-start:auto;display:flex;gap:6px"><button class="btn sec" id="toperson">👤 صفحة الطالب</button><button class="btn sec" id="cl">✕</button></span></div>
+      <div class="bd"><p class="muted">جارٍ تحميل الأسئلة…</p></div>`;
+    document.getElementById('cl').onclick = () => { d.hidden = true; };
+    document.getElementById('toperson').onclick = () => person(back);
+    const bd = d.querySelector('.bd');
+    try { await loadMeta(); } catch (x) { bd.innerHTML = `<p class="err">${esc(x.message)}</p>`; return; }
+    const ids = det.qs || [];
+    const wrong = new Set(det.wrong || []);
+    if (!ids.length) {
+      bd.innerHTML = `<p class="muted">هذا الاختبار سُجّل قبل حفظ تفاصيل الأسئلة، فلا نعرف اختيارات الطالب فيه. الأسئلة التي أخطأ فيها:</p>
+        <ul>${[...wrong].map((id) => `<li>${esc((META.byId[id] || {}).title || id)}</li>`).join('') || '<li class="muted">لا شيء</li>'}</ul>`;
+      return;
+    }
+    const hasAns = Array.isArray(det.ans);
+    const rows = ids.map((id, i) => {
+      const q = META.byId[id] || { title: id, options: [] };
+      const a = hasAns ? det.ans[i] : undefined;
+      const right = !wrong.has(id);
+      const opt = (k) => (q.options && q.options[k] !== undefined ? `<strong>${LETTERS[k]}</strong>) ${esc(optText(q.options[k]))}` : '—');
+      const chosen = a === null ? '<span class="no">لم يُجب</span>' : a === undefined ? '<span class="muted">غير محفوظ</span>' : opt(a);
+      return { right, html: `<li class="ex-q ${right ? 'r' : 'w'}"><div class="ex-h"><span class="${right ? 'ok' : 'no'}">${right ? '✓' : '✗'}</span> <strong>${i + 1}. ${esc(q.title)}</strong>
+          <span class="muted">${esc(LV[q.level] || '')} • ${esc(DF[q.difficulty] || '')} • ${esc((META.skills[q.skill] || {}).title || '')}</span>
+          <a href="${SITE}/bank.html?q=${encodeURIComponent(id)}" target="_blank" rel="noopener">فتح السؤال ↗</a></div>
+          <div class="ex-a">إجابته: ${chosen}</div>${right ? '' : `<div class="ex-c">الصحيح: ${opt(q.answer)}</div>`}</li>` };
+    });
+    const nWrong = rows.filter((r) => !r.right).length;
+    const unans = hasAns ? det.ans.filter((x) => x === null).length : det.unanswered;
+    bd.innerHTML = `<p>✓ <strong>${rows.length - nWrong}</strong> صحيح • ✗ <strong>${nWrong}</strong> خطأ${unans != null ? ` (منها ${unans} بدون إجابة)` : ''}</p>
+      ${hasAns ? '' : '<p class="muted">هذا الاختبار سُجّل قبل حفظ اختيارات الطلاب، فنعرف الصح والخطأ فقط.</p>'}
+      <label class="muted"><input type="checkbox" id="onlyw"> الأخطاء فقط</label>
+      <ol class="ex-list" id="exl">${rows.map((r) => r.html).join('')}</ol>`;
+    document.getElementById('onlyw').onchange = (x) => { document.getElementById('exl').classList.toggle('only-w', x.target.checked); };
   }
 
   async function person(id) {
@@ -483,6 +546,7 @@ td.num { font-variant-numeric: tabular-nums; }
           تدريب: <strong>${pr.filter((e) => e.ok).length}</strong> صحيح من <strong>${pr.length}</strong> •
           <strong>${events.filter((e) => e.type === 'exam').length}</strong> اختبار</p>
         <ul class="tl">${events.map((e) => `<li><span class="ic">${icon(e)}</span><div>${desc(e)}<div class="tm">${esc(when(e.ts))}</div></div></li>`).join('') || '<li class="muted">لا يوجد نشاط.</li>'}</ul>`;
+      d.querySelectorAll('[data-exam]').forEach((b) => { b.onclick = () => examDetail({ ...events.find((x) => String(x.id) === b.dataset.exam), name: u.name, role: u.role, grade: u.grade }); });
     } catch (e) { d.querySelector('.bd').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
   }
 

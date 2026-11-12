@@ -234,6 +234,8 @@
       seconds: Math.round((Date.now() - S.startedAt) / 1000),
       detail: {
         qs: S.z.qs.map((q) => q.id),
+        // اختيار الطالب في كل سؤال (رقم الخيار، أو null إذا تركه فارغًا) ليراجعه المعلم في لوحة المشرف
+        ans: S.z.qs.map((q, i) => (Q.isAnswered(q, S.resp[i]) && typeof S.resp[i] === 'number' ? S.resp[i] : null)),
         wrong: S.z.qs.filter((q, i) => !results[i]).map((q) => q.id),
         unanswered: S.resp.filter((r, i) => !Q.isAnswered(S.z.qs[i], r)).length,
         ...(isSim ? { sim: 1, correct } : {}),
