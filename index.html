@@ -14,6 +14,25 @@
 <body>
 <header id="site-header"></header>
 <main class="wrap">
+  <section class="countdown card" id="countdown" hidden aria-live="polite">
+    <div class="cd-head">
+      <h2 class="cd-title">⏳ <span id="cd-name">الاختبار الأصلي لبيبراس</span></h2>
+      <p class="cd-date" id="cd-date"></p>
+    </div>
+    <div class="cd-boxes" id="cd-boxes">
+      <div class="cd-box"><span class="cd-n" id="cd-w">0</span><span class="cd-l">أسابيع</span></div>
+      <div class="cd-box"><span class="cd-n" id="cd-d">0</span><span class="cd-l">أيام</span></div>
+      <div class="cd-box"><span class="cd-n" id="cd-h">0</span><span class="cd-l">ساعات</span></div>
+      <div class="cd-box"><span class="cd-n" id="cd-m">0</span><span class="cd-l">دقائق</span></div>
+      <div class="cd-box"><span class="cd-n" id="cd-s">0</span><span class="cd-l">ثوانٍ</span></div>
+    </div>
+    <p class="cd-msg" id="cd-msg" hidden></p>
+    <div class="cd-foot">
+      <span class="muted" id="cd-now"></span>
+      <span class="btn-row" style="margin:0"><a class="btn small accent" href="quizzes.html">🏆 تدرّب بمحاكاة المسابقة</a>
+        <a class="btn small secondary" id="cd-link" href="https://bebrasksa.org" target="_blank" rel="noopener">الموقع الرسمي ↗</a></span>
+    </div>
+  </section>
   <section class="hero">
     <div>
       <h1>تدرّب على بيبراس موهبة 🦫</h1>
@@ -95,6 +114,60 @@
       <a class="card skill-card" href="lessons.html?id=${s.id}"><span class="ic">${s.icon}</span>
         <div><h3>${App.esc(s.title)} ${p.lessons[s.id] ? '<span class="badge done">✓ مكتمل</span>' : ''}</h3><p>${App.esc(s.desc)}</p></div></a>`).join('');
   } catch (e) { App.loadError(box, e); }
+})();
+</script>
+<script>
+/* ===== العدّ التنازلي للاختبار الأصلي (بتوقيت السعودية) =====
+   الموعد في data/config.json ← exam.at (مثل 2026-12-05T14:00:00+03:00).
+   نصحّح ساعة الجهاز بوقت الخادم (ترويسة Date) حتى يكون العدّ صحيحًا حتى لو كانت ساعة الجهاز خاطئة. */
+(async function () {
+  const box = document.getElementById('countdown');
+  let cfg;
+  try { cfg = await App.json('data/config.json'); } catch (e) { return; }
+  const ex = cfg.exam;
+  if (!ex || !ex.at) return;
+  const target = Date.parse(ex.at);
+  if (!Number.isFinite(target)) return;
+  const duration = (ex.durationMinutes || 60) * 60000;
+  let offset = 0;
+  try {
+    const r = await fetch('data/config.json?t=' + Date.now(), { cache: 'no-store' });
+    const server = Date.parse(r.headers.get('Date'));
+    if (Number.isFinite(server) && Math.abs(server - Date.now()) > 3000) offset = server - Date.now();
+  } catch (e) { /* نستخدم ساعة الجهاز */ }
+  const now = () => Date.now() + offset;
+  if (now() > target + duration + 86400000) return; // بعد يوم من انتهاء الاختبار يختفي العداد
+
+  document.getElementById('cd-name').textContent = ex.title || 'الاختبار الأصلي لبيبراس';
+  document.getElementById('cd-date').textContent = '📅 ' + (ex.label || '');
+  if (ex.link) document.getElementById('cd-link').href = ex.link;
+  box.hidden = false;
+  const el = (id) => document.getElementById(id);
+  const riyadh = new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  const pad = (n) => String(n).padStart(2, '0');
+  let timer = null;
+  function tick() {
+    const t = now();
+    el('cd-now').textContent = '🕒 الوقت الآن في السعودية: ' + riyadh.format(new Date(t));
+    const left = target - t;
+    if (left > 0) {
+      let s = Math.floor(left / 1000);
+      const w = Math.floor(s / 604800); s -= w * 604800;
+      const d = Math.floor(s / 86400); s -= d * 86400;
+      const h = Math.floor(s / 3600); s -= h * 3600;
+      const m = Math.floor(s / 60); s -= m * 60;
+      el('cd-w').textContent = w; el('cd-d').textContent = d;
+      el('cd-h').textContent = pad(h); el('cd-m').textContent = pad(m); el('cd-s').textContent = pad(s);
+      return;
+    }
+    el('cd-boxes').hidden = true;
+    const msg = el('cd-msg');
+    msg.hidden = false;
+    if (t < target + duration) { msg.className = 'cd-msg live'; msg.innerHTML = '🟢 الاختبار بدأ الآن! ادخل من <a href="' + (ex.link || 'https://bebrasksa.org') + '" target="_blank" rel="noopener">الموقع الرسمي</a>. بالتوفيق 🌟'; }
+    else { msg.className = 'cd-msg'; msg.textContent = '✅ انتهى موعد الاختبار. بالتوفيق للجميع 🌟'; if (timer) clearInterval(timer); timer = -1; }
+  }
+  tick();
+  if (timer !== -1) timer = setInterval(tick, 1000);
 })();
 </script>
 </body>

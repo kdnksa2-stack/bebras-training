@@ -1,6 +1,13 @@
 {
   "chatEndpoint": "https://bebras-chat.kdnksa2.workers.dev",
   "logEndpoint": "https://bebras-chat.kdnksa2.workers.dev/log",
+  "exam": {
+    "title": "الاختبار الأصلي لبيبراس",
+    "at": "2026-12-05T14:00:00+03:00",
+    "label": "السبت 5 ديسمبر 2026، الساعة 2:00 مساءً بتوقيت السعودية",
+    "link": "https://bebrasksa.org",
+    "durationMinutes": 60
+  },
   "maxMessageChars": 1000,
   "maxHistory": 12,
   "suggestions": [
