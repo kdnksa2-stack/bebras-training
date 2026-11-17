@@ -50,7 +50,7 @@
     <a class="big-link" href="about.html"><span class="ic">ℹ️</span><strong>عن المسابقة</strong><span>ما هي بيبراس؟ ولمن؟ وكيف يكون الاختبار؟</span></a>
     <a class="big-link" href="lessons.html"><span class="ic">📘</span><strong>الدروس</strong><span>12 مهارة، كل درس من 3 إلى 5 دقائق</span></a>
     <a class="big-link" href="summaries.html"><span class="ic">📝</span><strong>الملخصات</strong><span>صفحة واحدة لكل مهارة جاهزة للطباعة</span></a>
-    <a class="big-link" href="bank.html"><span class="ic">🧩</span><strong>بنك الأسئلة</strong><span>36 سؤالًا (12 لكل صف) + 20 مهمة من كتاب موهبة</span></a>
+    <a class="big-link" href="bank.html"><span class="ic">🧩</span><strong>بنك الأسئلة</strong><span>90 سؤالًا + 20 مهمة من كتاب موهبة</span></a>
     <a class="big-link" href="quizzes.html"><span class="ic">⏱️</span><strong>الاختبارات</strong><span>اختبارات جاهزة، ومولّد اختبار حسب اختيارك</span></a>
     <a class="big-link" href="videos.html"><span class="ic">🎬</span><strong>الفيديوهات</strong><span>شروحات بيبراس ودروس من قنوات عين</span></a>
     <a class="big-link" href="chat.html"><span class="ic">🤖</span><strong>المساعد الذكي</strong><span>اسأل عن أي مسألة أو درس</span></a>
@@ -72,8 +72,8 @@
     </div>
   </div>
 
-  <h2>اختر صفّك</h2>
-  <div class="grid grid-4" id="levels"></div>
+  <h2>🧩 أسئلة التدريب</h2>
+  <div id="levels"></div>
 
   <h2>المهارات</h2>
   <div class="grid grid-3" id="skills"></div>
@@ -103,12 +103,13 @@
       App.ask('هل تريد مسح كل تقدّمك المحفوظ في هذا الجهاز؟', { yes: 'مسح', no: 'إلغاء' }).then((ok) => { if (ok) { App.progress.reset(); location.reload(); } });
     });
 
-    document.getElementById('levels').innerHTML = Object.entries(App.LEVELS).filter(([id]) => App.GRADE_LEVELS.includes(id)).map(([id, name]) => {
-      const n = qs.filter((q) => q.level === id).length;
-      const z = quizzes.filter((x) => x.level === id && !x.sim); const sim = quizzes.find((x) => x.level === id && x.sim);
-      return `<div class="card"><h3 style="margin-top:0">${name}</h3><p class="muted">${n} سؤالًا • ${z.length === 1 ? 'اختبار واحد' : z.length + ' اختبارات'}</p>
-        <div class="btn-row"><a class="btn small" href="bank.html?level=${id}">الأسئلة</a>${z[0] ? `<a class="btn small secondary" href="quizzes.html?id=${z[0].id}">اختبار</a>` : ''}${sim ? `<a class="btn small accent" href="quizzes.html?id=${sim.id}">🏆 محاكاة</a>` : ''}</div></div>`;
-    }).join('');
+    // أسئلة موحّدة لكل الطلاب (بدون تقسيم حسب الصف)
+    {
+      const n = qs.filter((q) => q.level === 'mid').length;
+      const z = quizzes.filter((x) => x.level === 'mid' && !x.sim); const sim = quizzes.find((x) => x.level === 'mid' && x.sim);
+      document.getElementById('levels').innerHTML = `<div class="card"><p class="muted" style="margin-top:0">${n} سؤالًا على نمط بيبراس لكل طلاب المتوسط • ${z.length} اختبارات • محاكاة للمسابقة</p>
+        <div class="btn-row"><a class="btn small" href="bank.html?level=mid">الأسئلة</a>${z[0] ? `<a class="btn small secondary" href="quizzes.html?id=${z[0].id}">ابدأ اختبارًا</a>` : ''}${sim ? `<a class="btn small accent" href="quizzes.html?id=${sim.id}">🏆 محاكاة المسابقة</a>` : ''}</div></div>`;
+    }
 
     document.getElementById('skills').innerHTML = skills.map((s) => `
       <a class="card skill-card" href="lessons.html?id=${s.id}"><span class="ic">${s.icon}</span>

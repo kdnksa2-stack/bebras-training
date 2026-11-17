@@ -73,7 +73,7 @@
 
   function badges(q, skills) {
     const sk = skills && skills[q.skill];
-    return `<span class="badge lvl">${esc(App.LEVELS[q.level] || q.level)}</span>
+    return `${q.level === 'mid' ? '' : `<span class="badge lvl">${esc(App.LEVELS[q.level] || q.level)}</span>`}
       <span class="badge diff-${q.difficulty}">${esc(App.DIFFS[q.difficulty] || '')}</span>
       ${sk ? `<span class="badge">${sk.icon} ${esc(sk.title)}</span>` : ''}
       <span class="badge">${esc(App.TYPES[q.type] || '')}</span>`;
