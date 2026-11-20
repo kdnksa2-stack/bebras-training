@@ -129,7 +129,7 @@
       const w = document.createElement('div');
       w.className = 'ask-overlay gate';
       w.innerHTML = `<form class="ask-box card gate-box" role="dialog" aria-modal="true" aria-labelledby="gate-t" novalidate>
-        <img class="gate-logo" src="assets/book/beaver-ksa.png" alt="" width="105" height="164">
+        <img class="gate-logo" src="assets/brand/logo-icon.svg" alt="" width="120" height="120">
         <h2 id="gate-t">أهلًا بك في بيبراس تدريب موهبة 👋</h2>
         <p class="muted" style="margin-top:0">قبل البدء، عرّفنا بنفسك:</p>
         <div class="gate-roles" role="radiogroup" aria-label="أنا">
@@ -240,7 +240,7 @@
       header.className = 'site-header';
       header.innerHTML = `
         <div class="wrap">
-          <a class="brand" href="index.html"><span class="logo" aria-hidden="true"><img src="assets/book/beaver-ksa.png" alt="" width="105" height="164"></span>بيبراس تدريب موهبة</a>
+          <a class="brand" href="index.html"><span class="logo" aria-hidden="true"><img src="assets/brand/logo-icon.svg" alt="" width="120" height="120"></span>بيبراس تدريب موهبة</a>
           <nav class="nav" id="nav" aria-label="القائمة الرئيسية">
             ${NAV.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}
           </nav>
