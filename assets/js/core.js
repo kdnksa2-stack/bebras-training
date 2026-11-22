@@ -58,10 +58,14 @@
       p.lessons = p.lessons || {};
       p.solved = p.solved || {};
       p.quizzes = p.quizzes || {};
+      p.tried = p.tried || {};
+      p.days = p.days || {};
       return p;
     },
     markLesson(id) { const p = progress.get(); p.lessons[id] = true; save(p); },
-    markSolved(qid) { const p = progress.get(); p.solved[qid] = true; save(p); },
+    markSolved(qid) { const p = progress.get(); p.solved[qid] = true; p.tried[qid] = true; save(p); },
+    markTried(qid) { const p = progress.get(); p.tried[qid] = true; save(p); },
+    markDay() { const p = progress.get(); const d = new Date().toISOString().slice(0, 10); if (!p.days[d]) { p.days[d] = true; save(p); } },
     saveQuiz(id, score, total) {
       const p = progress.get();
       const prev = p.quizzes[id] || {};
@@ -183,13 +187,14 @@
     if (!b) return;
     b.hidden = !u;
     if (u) {
-      b.querySelector('span').textContent = words(u.name)[0];
+      b.querySelector('.acct-name').textContent = 'حسابي';
       b.title = `${u.name}${u.grade ? ' • ' + GRADE_NAMES[u.grade] : u.role === 'teacher' ? ' • معلم' : ''}`;
     }
   }
   async function ensureUser() {
     if (!getUser()) await gate();
     updateUserBtn();
+    progress.markDay();
     log('visit', { title: document.title });
     checkAdminAccess();
   }
@@ -232,6 +237,47 @@
     finally { b.disabled = false; }
   }
 
+  // ----- أيقونات خطية بسيطة -----
+  const ICONS = {
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 4.5 1.5 6.5 2 7H4c.5-.5 2-2.5 2-7"/><path d="M10 19.5a2 2 0 0 0 4 0"/></svg>',
+    user: '<svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c.8-4 3.9-6 7.5-6s6.7 2 7.5 6z"/></svg>',
+    chev: '<svg class="acct-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+  };
+
+  // ----- الجرس: تنبيهات مفيدة من محتوى الموقع وتقدّم الطالب -----
+  async function bellItems() {
+    const items = [];
+    try {
+      const c = await json('data/config.json');
+      const t = c.exam && Date.parse(c.exam.at);
+      if (t && t > Date.now()) items.push(`<a href="index.html#countdown">📅 <strong>${esc(c.exam.title || 'الاختبار الأصلي لبيبراس')}</strong><br><span class="muted">${esc(c.exam.label || '')}</span></a>`);
+    } catch (e) { /* */ }
+    try {
+      const p = progress.get();
+      const list = await skills();
+      const next = list.find((s) => !p.lessons[s.id]);
+      if (next) items.push(`<a href="lessons.html?id=${next.id}">📘 الدرس التالي لك: <strong>${esc(next.title)}</strong></a>`);
+      if (!Object.keys(p.quizzes).length) items.push('<a href="quizzes.html">⏱️ جرّب أول اختبار وقِس مستواك</a>');
+    } catch (e) { /* */ }
+    return items;
+  }
+  function setupBell() {
+    const btn = document.getElementById('bell-btn');
+    const pop = document.getElementById('bell-pop');
+    const dot = btn.querySelector('.bell-dot');
+    bellItems().then((it) => { dot.hidden = !it.length; });
+    const close = () => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!pop.hidden) { close(); return; }
+      const it = await bellItems();
+      pop.innerHTML = `<h3>الإشعارات</h3>${it.length ? it.join('') : '<p class="muted">لا توجد إشعارات جديدة.</p>'}`;
+      pop.hidden = false; btn.setAttribute('aria-expanded', 'true'); dot.hidden = true;
+    });
+    document.addEventListener('click', (e) => { if (!pop.hidden && !pop.contains(e.target)) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  }
+
   // ----- الرأس والتذييل -----
   function shell() {
     const page = location.pathname.split('/').pop() || 'index.html';
@@ -240,18 +286,21 @@
       header.className = 'site-header';
       header.innerHTML = `
         <div class="wrap">
-          <a class="brand" href="index.html"><span class="logo" aria-hidden="true"><img src="assets/brand/logo-icon.svg" alt="" width="120" height="120"></span>بيبراس تدريب موهبة</a>
+          <a class="brand" href="index.html" aria-label="بيبراس تدريب موهبة — الرئيسية"><span class="logo" aria-hidden="true"><img src="assets/brand/logo-icon.svg" alt="" width="120" height="120"></span><span class="brand-div" aria-hidden="true"></span><span class="brand-word">بيبراس</span></a>
           <nav class="nav" id="nav" aria-label="القائمة الرئيسية">
             ${NAV.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}
           </nav>
           <div class="header-tools">
             <button class="user-btn admin-btn" id="admin-btn" type="button" hidden title="لوحة المشرف (مشاهدة)"><b aria-hidden="true">📊</b><span>لوحة المشرف</span></button>
-            <button class="user-btn" id="user-btn" type="button" hidden aria-label="حسابي"><b aria-hidden="true">👤</b><span></span></button>
-            <button class="icon-btn" id="theme-btn" type="button"></button>
+            <div class="bell-wrap"><button class="bell-btn" id="bell-btn" type="button" aria-label="الإشعارات" aria-expanded="false" aria-controls="bell-pop">${ICONS.bell}<span class="bell-dot" hidden></span></button>
+              <div class="bell-pop" id="bell-pop" hidden></div></div>
+            <button class="acct-btn" id="user-btn" type="button" hidden aria-label="حسابي"><span class="acct-av" aria-hidden="true">${ICONS.user}</span><span class="acct-name">حسابي</span>${ICONS.chev}</button>
+            <button class="icon-btn theme-btn" id="theme-btn" type="button"></button>
             <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="القائمة" aria-expanded="false">☰</button>
           </div>
         </div>`;
       document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+      setupBell();
       document.getElementById('admin-btn').addEventListener('click', openAdmin);
       document.getElementById('user-btn').addEventListener('click', () => {
         const u = getUser();

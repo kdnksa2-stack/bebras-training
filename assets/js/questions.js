@@ -317,6 +317,7 @@
         fb.className = 'q-feedback feedback ' + (ok ? 'ok' : 'no');
         fb.textContent = ok ? '🎉 أحسنت! إجابة صحيحة.' : 'ليست صحيحة بعد. جرّب مرة أخرى، أو افتح التلميح، أو اعرض الحل.';
         if (st.markResult) st.markResult(ok ? true : null);
+        App.progress.markTried(q.id);
         if (ok) { App.progress.markSolved(q.id); showSolution(); if (opts.onSolved) opts.onSolved(q); }
       });
     }

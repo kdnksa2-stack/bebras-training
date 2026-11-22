@@ -52,6 +52,13 @@
       if (v) el.value = v;
     });
 
+    // مجموعة مهارات من الرئيسية: bank.html?skills=logic,graphs
+    let group = (App.param('skills') || '').split(',').filter((x) => skills[x]);
+    const groupName = App.param('gname');
+    if (group.length) {
+      $('count').insertAdjacentHTML('afterend', `<span class="badge lvl" id="grp">${esc(groupName || 'مجموعة مهارات')} <button type="button" class="btn ghost small" id="grp-x" aria-label="إلغاء المجموعة" style="min-height:0;padding:0 4px">✕</button></span>`);
+      $('grp-x').addEventListener('click', () => { group = []; $('grp').remove(); apply(); });
+    }
     let current = [];
     function apply() {
       const p = App.progress.get();
@@ -59,6 +66,7 @@
       current = all.filter((q) =>
         (!$('f-level').value || q.level === $('f-level').value) &&
         (!$('f-skill').value || q.skill === $('f-skill').value) &&
+        (!group.length || $('f-skill').value || group.includes(q.skill)) &&
         (!$('f-diff').value || q.difficulty === $('f-diff').value) &&
         (!$('f-type').value || q.type === $('f-type').value) &&
         (!$('f-unsolved').checked || !p.solved[q.id]) &&

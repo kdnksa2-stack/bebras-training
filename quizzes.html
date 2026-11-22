@@ -242,7 +242,7 @@
         ...(isSim ? { sim: 1, correct } : {}),
       },
     });
-    S.z.qs.forEach((q, i) => { if (results[i]) App.progress.markSolved(q.id); });
+    S.z.qs.forEach((q, i) => { App.progress.markTried(q.id); if (results[i]) App.progress.markSolved(q.id); });
     const pct = Math.round((score / total) * 100);
     const msg = pct >= 85 ? '🌟 ممتاز! مستواك قوي جدًا.' : pct >= 60 ? '👏 جيد جدًا! راجع أخطاءك لتصل للقمة.' : pct >= 40 ? '💪 بداية جيدة. راجع الحلول ثم أعد المحاولة.' : '📘 لا بأس! اقرأ دروس المهارات التي أخطأت فيها ثم جرّب مرة ثانية.';
     const wrongSkills = [...new Set(S.z.qs.filter((q, i) => !results[i]).map((q) => q.skill))];
