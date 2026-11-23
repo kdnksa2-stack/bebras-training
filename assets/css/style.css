@@ -195,7 +195,7 @@ main { padding: 18px 0 40px; min-height: 70vh; }
 .footer-contact a { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); text-decoration: none; font-weight: 700; }
 .footer-contact a:hover { border-color: currentColor; }
 .footer-credit { margin: 0; font-size: 1rem; }
-.footer-credit .creator { font-family: 'Aref Ruqaa', 'Tajawal', serif; font-weight: 700; font-size: 1.6rem; color: var(--text, inherit); margin-inline-start: .3em; line-height: 1.6; }
+.footer-credit .creator { font-family: 'Aref Ruqaa', 'Tajawal', serif; font-weight: 700; font-size: 1.6rem; color: var(--text, inherit); line-height: 1.6; }
 
 /* ===== عناصر عامة ===== */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }

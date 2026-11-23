@@ -359,7 +359,7 @@
         <nav class="footer-links" aria-label="مواقع رسمية"><span class="footer-label">مواقع رسمية:</span>
           ${official.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join('')}</nav>
         <p class="footer-note">موقع تعليمي مجاني غير رسمي للتدريب على التفكير الحاسوبي • أسئلة البنك من تأليف الموقع، ومهام «كتاب موهبة» من <a href="${BOOK_PDF}" target="_blank" rel="noopener">كتاب النشاط الرسمي</a> لفريق بيبراس السعودي • للتسجيل والمواعيد: <a href="https://bebrasksa.org" target="_blank" rel="noopener">bebrasksa.org</a><br>🔒 نحفظ الاسم والصف والنتائج فقط، ويراها مشرف الموقع لمتابعة التقدّم، ولا نشاركها مع أي جهة. المحادثات مع المساعد لا تُحفظ.</p>
-        <p class="footer-credit">إعداد وتصميم <span class="creator">أحمد أيمن الغامدي</span></p>
+        <p class="footer-credit"><span class="creator">المصمم : أحمد أيمن الغامدي</span></p>
         <nav class="footer-contact" aria-label="للاستفسار"><span class="footer-label">للاستفسار:</span>
           <a href="tel:+966552922353" rel="noopener"><span aria-hidden="true">📞</span> <bdi dir="ltr">0552922353</bdi></a>
           <a href="https://wa.me/966552922353" target="_blank" rel="noopener"><span aria-hidden="true">💬</span> واتساب</a>
