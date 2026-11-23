@@ -7,40 +7,45 @@
 <title>لوحة المشرف | بيبراس تدريب موهبة</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<meta name="theme-color" content="#0a0b22">
 <style>
+/* نفس هوية الموقع الداكنة (بنفسجي نيون) */
 :root {
-  --bg: #f4f6fb; --surface: #fff; --surface-2: #eef2f8; --text: #1c2433; --muted: #5d6b82; --border: #dde3ee;
-  --primary: #1f6feb; --primary-soft: #e3edff; --ok: #12925a; --ok-soft: #e2f6ec; --bad: #d23a3a; --bad-soft: #fdeaea; --warn: #b8700e;
-  --radius: 14px; color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f141c; --surface: #171e29; --surface-2: #1f2835; --text: #e7ecf3; --muted: #9aa6b8; --border: #2c3747;
-    --primary: #5b9bff; --primary-soft: #1b2b45; --ok: #3ccf86; --ok-soft: #14301f; --bad: #ff7070; --bad-soft: #3a1c1c; --warn: #f0b04a; color-scheme: dark;
-  }
+  --bg: #0a0b22; --surface: #121437; --surface-2: #1a1c48; --text: #eef0ff; --muted: #a7aad8; --border: #262a62;
+  --primary: #a46cff; --primary-2: #c39bff; --primary-soft: #2a2163; --accent: #22d3ee;
+  --ok: #3ddc97; --ok-soft: #0f3326; --bad: #ff7a7a; --bad-soft: #3a1c26; --warn: #f0b04a;
+  --grad: linear-gradient(90deg, #a24dff 0%, #7a35ee 50%, #5b2be0 100%);
+  --radius: 16px; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Tajawal', system-ui, sans-serif; line-height: 1.6; }
+body { margin: 0; min-height: 100vh; color: var(--text); font-family: 'Tajawal', system-ui, sans-serif; line-height: 1.6;
+  background: radial-gradient(1200px 600px at 85% -10%, rgba(120, 60, 255, .16), transparent 60%), radial-gradient(900px 500px at 0% 30%, rgba(34, 211, 238, .06), transparent 60%), var(--bg); }
+a { color: var(--primary-2); }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 0 4px; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 0 14px; border-bottom: 1px solid var(--border); }
 header h1 { margin: 0; font-size: 1.35rem; }
-header .sp { margin-inline-start: auto; display: flex; gap: 8px; }
+header .ttl { display: flex; align-items: center; gap: 12px; }
+header .sp { margin-inline-start: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.logo { display: block; width: 48px; height: 48px; filter: drop-shadow(0 0 12px rgba(164, 108, 255, .45)); }
+.login .logo { width: 108px; height: 108px; margin: 0 auto; }
 button, input, select { font: inherit; }
-.btn { border: 1px solid var(--primary); background: var(--primary); color: #fff; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
-.btn.sec { background: var(--surface); color: var(--text); border-color: var(--border); }
-.btn.danger { background: var(--bad); border-color: var(--bad); }
+.btn { border: 1px solid transparent; background: var(--grad); color: #fff; border-radius: 12px; padding: 8px 14px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px rgba(122, 53, 238, .35); }
+.btn.sec { background: var(--surface-2); color: var(--text); border-color: var(--border); box-shadow: none; }
+.btn.sec:hover { border-color: var(--primary); }
+.btn.danger { background: #d9455a; border-color: #d9455a; box-shadow: none; }
 .btn:disabled { opacity: .6; cursor: default; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.card { background: linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 80%, var(--bg)) 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 14px 30px rgba(0, 0, 0, .3); }
+.glow { border-color: #5b46d6; box-shadow: 0 0 0 1px rgba(150, 110, 255, .25), 0 0 32px rgba(120, 80, 255, .22), inset 0 0 40px rgba(110, 80, 255, .12); }
 .login { max-width: 380px; margin: 12vh auto; display: flex; flex-direction: column; gap: 12px; text-align: center; }
 .login input { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); text-align: center; direction: ltr; }
 .err { color: var(--bad); font-weight: 700; min-height: 1.4em; margin: 0; }
 .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
-.stat .n { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat .n { font-size: 1.7rem; font-weight: 800; color: var(--primary-2); font-variant-numeric: tabular-nums; }
 .stat .l { color: var(--muted); font-size: .9rem; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 10px; }
 .tabs button { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 7px 16px; font-weight: 700; cursor: pointer; }
-.tabs button.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.tabs button.on { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 6px 18px rgba(122, 53, 238, .35); }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
 .filters input, .filters select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
 .filters .count { color: var(--muted); margin-inline-start: auto; }
@@ -52,7 +57,7 @@ tbody tr.click { cursor: pointer; }
 tbody tr.click:hover { background: var(--surface-2); }
 td.num { font-variant-numeric: tabular-nums; }
 .pill { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: .82rem; font-weight: 700; background: var(--surface-2); }
-.pill.t { background: var(--primary-soft); color: var(--primary); }
+.pill.t { background: var(--primary-soft); color: var(--primary-2); }
 .pct { font-weight: 800; }
 .pct.hi { color: var(--ok); } .pct.mid { color: var(--warn); } .pct.lo { color: var(--bad); }
 .ok { color: var(--ok); font-weight: 800; } .no { color: var(--bad); font-weight: 800; }
@@ -133,8 +138,8 @@ td.num { font-variant-numeric: tabular-nums; }
 
   function login(msg) {
     const dev = ls.get(DEVKEY);
-    app.innerHTML = `<form class="card login" id="lf">
-      <div style="font-size:2.4rem">📊</div>
+    app.innerHTML = `<form class="card login glow" id="lf">
+      <img class="logo" src="logo.svg" alt="" width="108" height="108">
       <h1 style="margin:0;font-size:1.3rem">لوحة المشرف</h1>
       <p class="muted" style="margin:0">بيبراس تدريب موهبة: سجلات الطلاب والمعلمين</p>
       ${dev ? '<button class="btn" type="button" id="devlogin">💻 دخول بهذا الجهاز (بدون كلمة مرور)</button><p class="muted" style="margin:0">أو بكلمة المرور:</p>' : ''}
@@ -163,7 +168,7 @@ td.num { font-variant-numeric: tabular-nums; }
     try { ME = await api('/admin/me'); } catch (e) { return; }
     if (!isOwner() && TAB === 'access') TAB = 'people';
     const badge = isOwner() ? `<span class="pill t">👑 المالك${ME.via === 'device' ? ' • من جهاز مسجّل' : ''}</span>` : `<span class="pill">👁️ مشاهدة فقط: ${esc(ME.label || '')}</span>`;
-    app.innerHTML = `<header><h1>📊 لوحة المشرف</h1>${badge}
+    app.innerHTML = `<header><span class="ttl"><img class="logo" src="logo.svg" alt="" width="48" height="48"><h1>لوحة المشرف</h1></span>${badge}
         <span class="sp">${isOwner() ? '<button class="btn sec" id="bk">💾 نسخة احتياطية</button><button class="btn sec" id="bkx">📊 كل السجلات (Excel)</button>' : ''}<button class="btn sec" id="rf">🔄 تحديث</button><button class="btn sec" id="lo">خروج</button></span></header>
       <div id="bk-note"></div>
       <div class="stats" id="stats"><div class="card">جارٍ التحميل…</div></div>
