@@ -28,7 +28,6 @@
 (async function () {
   const $ = (id) => document.getElementById(id);
   const { esc, game } = App;
-  const GR = { m1: 'أول متوسط', m2: 'ثاني متوسط', m3: 'ثالث متوسط' };
   async function load(period) {
     document.querySelectorAll('.g-tabs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === period)));
     $('board-box').innerHTML = '<p class="muted">جارٍ التحميل…</p>';
@@ -38,8 +37,8 @@
       $('me-box').innerHTML = d.me
         ? `<div class="g-me-bar"><div><div class="muted">مركزك ${when}</div><div class="g-big" style="direction:ltr;text-align:end">#${d.me.r}</div></div><div><div class="muted">نقاطك</div><div class="g-big">${d.me.p.toLocaleString('en')}</div></div><div class="muted">من بين ${d.students.toLocaleString('en')} طالبًا، ${d.ranked.toLocaleString('en')} منهم لديهم نقاط ${when}</div></div>`
         : `<p style="margin:0">لا توجد لك نقاط ${when} بعد. <a href="bank.html">حل أول سؤال</a> لتدخل الترتيب.</p>`;
-      $('board-box').innerHTML = d.top.length ? `<table class="g-board"><thead><tr><th>المركز</th><th>الطالب</th><th>الصف</th><th style="text-align:end">النقاط</th></tr></thead><tbody>
-        ${d.top.map((x) => `<tr class="${x.me ? 'me' : ''}"><td>${x.r <= 3 ? `<span class="g-medal m${x.r}">${x.r}</span>` : '#' + x.r}</td><td><strong>${esc(x.n)}</strong>${x.me ? ' <span class="g-pill" style="padding:2px 10px">أنت</span>' : ''}</td><td class="muted">${GR[x.g] || ''}</td><td>${x.p.toLocaleString('en')}</td></tr>`).join('')}
+      $('board-box').innerHTML = d.top.length ? `<table class="g-board"><thead><tr><th>المركز</th><th>الطالب</th><th style="text-align:end">النقاط</th></tr></thead><tbody>
+        ${d.top.map((x) => `<tr class="${x.me ? 'me' : ''}"><td>${x.r <= 3 ? `<span class="g-medal m${x.r}">${x.r}</span>` : '#' + x.r}</td><td><strong>${esc(x.n)}</strong>${x.me ? ' <span class="g-pill" style="padding:2px 10px">أنت</span>' : ''}</td><td>${x.p.toLocaleString('en')}</td></tr>`).join('')}
         </tbody></table>` : `<div class="g-card"><p style="margin:0">لا يوجد أحد في الترتيب ${when} بعد. كن الأول!</p></div>`;
     } catch (e) {
       $('me-box').innerHTML = '<p style="margin:0">الترتيب غير متاح الآن. تأكد من الاتصال بالإنترنت وحاول لاحقًا.</p>';

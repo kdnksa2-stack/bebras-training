@@ -247,9 +247,13 @@ function riyadhWeekStart(now = Date.now()) {
   return d.getTime() - off;
 }
 function shortName(name) {
-  const w = String(name || '').replace(/[<>&"']/g, '').trim().split(/\s+/).filter(Boolean);
+  // كلمات فيها حروف فقط (بدون أقواس أو رموز)، و«عبد الله / عبد الرحمن…» تبقى كاسم أول واحد
+  const w = String(name || '').replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
   if (!w.length) return 'طالب';
-  return w.length > 1 ? `${w[0]} ${w[w.length - 1].replace(/^ال/, '').charAt(0)}.` : w[0];
+  let first = w.shift();
+  if ((first === 'عبد' || first === 'ابو' || first === 'أبو') && w.length) first += ' ' + w.shift();
+  if (!w.length) return first;
+  return `${first} ${w[w.length - 1].replace(/^ال/, '').charAt(0)}.`;
 }
 async function boardRows(env, period) {
   const hit = boardCache.get(period);
@@ -290,7 +294,7 @@ async function handleBoard(request, env) {
     let rank = 0, prev = null;
     const ranked = rows.map((r, i) => { if (r.pts !== prev) { rank = i + 1; prev = r.pts; } return { r: rank, id: r.id, n: shortName(r.name), g: r.grade, p: r.pts }; });
     const meRow = /^[\w-]{8,64}$/.test(uid) ? ranked.find((x) => x.id === uid) : null;
-    const top = ranked.slice(0, 50).map((x) => ({ r: x.r, n: x.n, g: x.g, p: x.p, me: x.id === uid || undefined }));
+    const top = ranked.slice(0, 50).map((x) => ({ r: x.r, n: x.n, p: x.p, me: x.id === uid || undefined }));
     return reply({ period, students, ranked: ranked.length, top, me: meRow ? { r: meRow.r, p: meRow.p } : null, weekStart: riyadhWeekStart() }, 200,
       { ...c.headers, 'Cache-Control': 'private, max-age=30' });
   } catch (e) {

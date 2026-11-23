@@ -730,7 +730,7 @@ label { cursor: pointer; }
 .g-board th { text-align: start; color: var(--muted); font-size: .88rem; font-weight: 700; padding: 0 14px; }
 .g-board td { background: var(--surface); padding: 12px 14px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .g-board td:first-child { border-inline-start: 1px solid var(--border); border-start-start-radius: 14px; border-end-start-radius: 14px; width: 70px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.g-board td:last-child { border-inline-end: 1px solid var(--border); border-start-end-radius: 14px; border-end-end-radius: 14px; text-align: end; font-weight: 800; direction: ltr; }
+.g-board td:last-child { border-inline-end: 1px solid var(--border); border-start-end-radius: 14px; border-end-end-radius: 14px; text-align: end; font-weight: 800; font-variant-numeric: tabular-nums; }
 .g-board tr.me td { background: var(--primary-soft); border-color: #6a4ff0; }
 .g-medal { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font-weight: 800; color: #1b1200; }
 .g-medal.m1 { background: linear-gradient(180deg, #ffe27a, #f2a812); box-shadow: 0 0 14px rgba(255, 200, 60, .5); }
