@@ -126,6 +126,7 @@ export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
     if (path === '/log') return handleLog(request, env);
+    if (path === '/board') return handleBoard(request, env);
     if (path.startsWith('/admin')) return handleAdmin(request, env, path);
     if (path.startsWith('/access/')) return handleAccess(request, env, path);
 
@@ -229,6 +230,71 @@ async function handleLog(request, env) {
     return reply({ ok: true }, 200, c.headers);
   } catch (e) {
     console.error('log error', e && e.message);
+    return reply({ error: 'db_error' }, 500, c.headers);
+  }
+}
+
+/* ======================= الترتيب (لوحة الشرف) =======================
+   GET /board?period=all|week&uid=…   من الموقع فقط (ALLOWED_ORIGINS)
+   النقاط: 10 لكل سؤال مختلف أُجيب صحيحًا (تدريب) + 5 لكل درجة من أفضل نتيجة في كل اختبار.
+   «الأسبوع» يبدأ الأحد 12:00 ص بتوقيت السعودية. يظهر الاسم الأول + أول حرف من اسم العائلة فقط. */
+const boardCache = new Map(); // period -> { t, rows, students }
+function riyadhWeekStart(now = Date.now()) {
+  const off = 3 * 3600e3;
+  const d = new Date(now + off);
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+  return d.getTime() - off;
+}
+function shortName(name) {
+  const w = String(name || '').replace(/[<>&"']/g, '').trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return 'طالب';
+  return w.length > 1 ? `${w[0]} ${w[w.length - 1].replace(/^ال/, '').charAt(0)}.` : w[0];
+}
+async function boardRows(env, period) {
+  const hit = boardCache.get(period);
+  if (hit && Date.now() - hit.t < 60000) return hit;
+  const since = period === 'week' ? riyadhWeekStart() : 0;
+  const q = `WITH p AS (SELECT user_id, COUNT(DISTINCT ref) c FROM events WHERE type = 'practice' AND ok = 1 AND ts >= ?1 GROUP BY user_id),
+      x AS (SELECT user_id, SUM(m) s FROM (SELECT user_id, ref, MAX(score) m FROM events WHERE type = 'exam' AND ts >= ?1 AND score IS NOT NULL GROUP BY user_id, ref) GROUP BY user_id)
+    SELECT u.id, u.name, u.grade, COALESCE(p.c, 0) * 10 + COALESCE(x.s, 0) * 5 AS pts
+    FROM users u LEFT JOIN p ON p.user_id = u.id LEFT JOIN x ON x.user_id = u.id
+    WHERE u.role = 'student' AND (COALESCE(p.c, 0) + COALESCE(x.s, 0)) > 0
+    ORDER BY pts DESC, u.first_seen ASC`;
+  const [res, cnt] = await env.DB.batch([
+    env.DB.prepare(q).bind(since),
+    env.DB.prepare(`SELECT COUNT(*) n FROM users WHERE role = 'student'`),
+  ]);
+  const out = { t: Date.now(), rows: res.results || [], students: (cnt.results && cnt.results[0] && cnt.results[0].n) || 0 };
+  boardCache.set(period, out);
+  return out;
+}
+async function handleBoard(request, env) {
+  const origin = request.headers.get('Origin') || '';
+  const c = corsFor(origin, env.ALLOWED_ORIGINS, 'GET, OPTIONS');
+  if (request.method === 'OPTIONS') return new Response(null, { status: c.ok ? 204 : 403, headers: c.headers });
+  if (!c.ok) return reply({ error: 'origin_not_allowed' }, 403, c.headers);
+  if (request.method !== 'GET') return reply({ error: 'method_not_allowed' }, 405, c.headers);
+  if (!env.DB) return reply({ error: 'no_db' }, 503, c.headers);
+  if (env.RATE_LIMITER_IP) {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const { success } = await env.RATE_LIMITER_IP.limit({ key: 'board:' + ip });
+    if (!success) return reply({ error: 'rate_limited' }, 429, c.headers);
+  }
+  const url = new URL(request.url);
+  const period = url.searchParams.get('period') === 'week' ? 'week' : 'all';
+  const uid = url.searchParams.get('uid') || '';
+  try {
+    const { rows, students } = await boardRows(env, period);
+    // نفس النقاط = نفس المركز
+    let rank = 0, prev = null;
+    const ranked = rows.map((r, i) => { if (r.pts !== prev) { rank = i + 1; prev = r.pts; } return { r: rank, id: r.id, n: shortName(r.name), g: r.grade, p: r.pts }; });
+    const meRow = /^[\w-]{8,64}$/.test(uid) ? ranked.find((x) => x.id === uid) : null;
+    const top = ranked.slice(0, 50).map((x) => ({ r: x.r, n: x.n, g: x.g, p: x.p, me: x.id === uid || undefined }));
+    return reply({ period, students, ranked: ranked.length, top, me: meRow ? { r: meRow.r, p: meRow.p } : null, weekStart: riyadhWeekStart() }, 200,
+      { ...c.headers, 'Cache-Control': 'private, max-age=30' });
+  } catch (e) {
+    console.error('board error', e && e.message);
     return reply({ error: 'db_error' }, 500, c.headers);
   }
 }

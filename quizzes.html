@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>الاختبارات | بيبراس تدريب موهبة</title>
 <meta name="description" content="اختبارات تفاعلية على نمط بيبراس مع تصحيح تلقائي ومراجعة الأخطاء، وقابلة للطباعة بتنسيق A4.">
-<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>try{var t=localStorage.getItem('theme');document.documentElement.dataset.theme=t||'dark'}catch(e){document.documentElement.dataset.theme='dark'}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -229,7 +229,7 @@
     const isSim = !!S.z.sim;
     const score = isSim ? S.z.qs.reduce((s, q, i) => s + (results[i] ? simPoints(S.z, q) : 0), 0) : correct;
     const total = isSim ? S.z.qs.reduce((s, q) => s + simPoints(S.z, q), 0) : count;
-    if (S.z.id !== 'custom') App.progress.saveQuiz(S.z.id, score, total);
+    if (S.z.id !== 'custom') App.progress.saveQuiz(S.z.id, score, total, (Date.now() - S.startedAt) / 1000);
     App.log('exam', {
       ref: S.z.id, title: S.z.title, score, total,
       seconds: Math.round((Date.now() - S.startedAt) / 1000),
@@ -242,7 +242,7 @@
         ...(isSim ? { sim: 1, correct } : {}),
       },
     });
-    S.z.qs.forEach((q, i) => { App.progress.markTried(q.id); if (results[i]) App.progress.markSolved(q.id); });
+    S.z.qs.forEach((q, i) => { App.progress.markTried(q.id); if (results[i]) App.progress.markSolved(q.id, q); });
     const pct = Math.round((score / total) * 100);
     const msg = pct >= 85 ? '🌟 ممتاز! مستواك قوي جدًا.' : pct >= 60 ? '👏 جيد جدًا! راجع أخطاءك لتصل للقمة.' : pct >= 40 ? '💪 بداية جيدة. راجع الحلول ثم أعد المحاولة.' : '📘 لا بأس! اقرأ دروس المهارات التي أخطأت فيها ثم جرّب مرة ثانية.';
     const wrongSkills = [...new Set(S.z.qs.filter((q, i) => !results[i]).map((q) => q.skill))];

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>التحديات الأسبوعية | بيبراس تدريب موهبة</title>
+<meta name="description" content="خمس مهام جديدة كل أسبوع: حل أسئلة متنوعة، مسألة تحدٍّ، تحسين وقتك، إكمال مجموعة، ودرس جديد.">
+<script>try{var t=localStorage.getItem('theme');document.documentElement.dataset.theme=t||'dark'}catch(e){document.documentElement.dataset.theme='dark'}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" type="image/svg+xml" href="assets/brand/logo-icon.svg">
+<link rel="apple-touch-icon" href="assets/brand/logo-180.png">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="wrap g-wrap">
+
+  <div class="g-page-h"><h1>📅 التحديات الأسبوعية</h1><span class="g-pill" id="wk-left">…</span></div>
+  <p class="muted" style="margin-top:0">خمس مهام جديدة كل أسبوع تبدأ يوم الأحد. أكملها كلها لتحصل على وسام «بطل الأسبوع». التقدّم محفوظ في جهازك.</p>
+  <div class="g-card glow" style="margin-bottom:18px">
+    <div class="g-me-bar"><strong id="wk-sum" style="font-size:1.3rem">0 من 5 مهام</strong><span class="muted" id="wk-range"></span></div>
+    <div class="g-week-bar" role="progressbar" aria-valuemin="0" aria-valuemax="5" id="wk-bar"><span style="width:0%"></span></div>
+  </div>
+  <div class="g-card"><ul class="g-tasks" id="tasks" style="font-size:1.05rem"><li class="muted">جارٍ التحميل…</li></ul></div>
+  <h2>🎯 مجموعة هذا الأسبوع</h2>
+  <div class="g-card" id="grp-box"></div>
+</main>
+<footer id="site-footer"></footer>
+<script src="assets/js/core.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const { esc, game } = App;
+  try {
+    const [qs, skills] = await Promise.all([App.questions(), App.skills()]);
+    const p = App.progress.get();
+    const T = game.weekTasks(p, qs);
+    const done = T.filter((t) => t.done).length;
+    $('wk-sum').textContent = `${done} من ${T.length} مهام مكتملة${done === T.length ? ' 🎉' : ''}`;
+    $('wk-bar').setAttribute('aria-valuenow', done); $('wk-bar').firstElementChild.style.width = (done / T.length * 100) + '%';
+    const end = game.weekEnds(); const st = new Date(end); st.setDate(st.getDate() - 7);
+    const f = (d) => d.toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' });
+    const last = new Date(end); last.setDate(last.getDate() - 1);
+    $('wk-range').textContent = `الأسبوع: ${f(st)} – ${f(last)}`;
+    const left = Math.ceil((end - Date.now()) / 864e5);
+    $('wk-left').textContent = left <= 1 ? 'آخر يوم في هذا الأسبوع' : `باقي ${left} أيام`;
+    $('tasks').innerHTML = T.map((t) => `<li class="${t.done ? 'done' : ''}"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true">${game.GI[t.done ? 'check' : t.icon]}</svg>
+      <span class="tt"><a href="${t.href}">${esc(t.title)}</a>${t.note && !t.done ? `<small>${esc(t.note)}</small>` : ''}
+        <div class="tbar"><span style="width:${t.cur / t.goal * 100}%"></span></div></span>
+      <span class="tc">${t.cur || (t.goal === 1 ? '–' : 0)} / ${t.goal}</span></li>`).join('');
+    const g = game.weekGroup();
+    const sk = skills.filter((s) => g.skills.includes(s.id));
+    const mine = qs.filter((q) => g.skills.includes(q.skill));
+    $('grp-box').innerHTML = `<p style="margin-top:0">مجموعة هذا الأسبوع: <strong>${esc(g.name)}</strong> — ${mine.length} سؤالًا من ${sk.length} مهارات. حل 10 منها هذا الأسبوع.</p>
+      <div class="grid grid-2">${sk.map((s) => `<a class="skill-card card" href="bank.html?skill=${s.id}"><span class="ic">${s.icon}</span><div><h3>${esc(s.title)}</h3><p>${mine.filter((q) => q.skill === s.id && p.wk.solved[q.id]).length} محلولة هذا الأسبوع من ${mine.filter((q) => q.skill === s.id).length}</p></div></a>`).join('')}</div>
+      <div class="btn-row"><a class="btn grad" href="bank.html?skills=${g.skills.join(',')}&gname=${encodeURIComponent(g.name)}">ابدأ المجموعة</a></div>`;
+  } catch (e) { App.loadError($('tasks'), e); }
+})();
+</script>
+</body>
+</html>

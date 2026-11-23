@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الإنجازات | بيبراس تدريب موهبة</title>
+<meta name="description" content="أوسمتك وسلسلة أيام تدريبك وتقدّمك في كل مهارة.">
+<script>try{var t=localStorage.getItem('theme');document.documentElement.dataset.theme=t||'dark'}catch(e){document.documentElement.dataset.theme='dark'}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" type="image/svg+xml" href="assets/brand/logo-icon.svg">
+<link rel="apple-touch-icon" href="assets/brand/logo-180.png">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="wrap g-wrap">
+
+  <div class="g-page-h"><h1>🏅 الإنجازات</h1><span class="g-pill" id="b-count">…</span></div>
+  <div class="g-stats" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+    <div class="g-card"><div class="muted">🔥 سلسلة الإنجاز</div><div class="g-big" id="a-streak">0</div><div class="g-sub">أيام متتالية</div></div>
+    <div class="g-card"><div class="muted">📅 أيام التدريب</div><div class="g-big" id="a-days">0</div><div class="g-sub">يومًا بالمجموع</div></div>
+    <div class="g-card"><div class="muted">✅ إجابات صحيحة</div><div class="g-big" id="a-ok">0</div><div class="g-sub">سؤالًا مختلفًا</div></div>
+    <div class="g-card"><div class="muted">📘 دروس مكتملة</div><div class="g-big" id="a-les">0</div><div class="g-sub" id="a-les-of"></div></div>
+  </div>
+  <h2>أوسمتي</h2>
+  <div class="g-grid-badges" id="badges"><p class="muted">جارٍ التحميل…</p></div>
+  <h2 id="skills-h">تقدّمك في كل مهارة</h2>
+  <div class="g-card"><div id="review-box"></div></div>
+</main>
+<footer id="site-footer"></footer>
+<script src="assets/js/core.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const { esc, game } = App;
+  try {
+    const [skills, qs, quizzes] = await Promise.all([App.skills(), App.questions(), App.json('data/quizzes.json')]);
+    const p = App.progress.get();
+    const B = game.badges(p, qs, quizzes, skills);
+    const n = B.filter((b) => b.earned).length;
+    $('b-count').textContent = `${n} من ${B.length} أوسمة`;
+    $('a-streak').textContent = game.streak(p);
+    $('a-days').textContent = Object.keys(p.days).length;
+    $('a-ok').textContent = Object.keys(p.solved).length;
+    $('a-les').textContent = Object.keys(p.lessons).length; $('a-les-of').textContent = `من ${skills.length} دروس`;
+    const order = [...B].sort((a, b) => (b.earned - a.earned) || (b.at - a.at) || (b.cur / b.goal - a.cur / a.goal));
+    $('badges').innerHTML = order.map((b) => `<div class="g-card g-bcard${b.isNew ? ' new' : ''}">${game.badgeSvg(b, 76)}<h3>${esc(b.name)}</h3><p>${esc(b.desc)}</p>
+      ${b.earned ? `<p style="color:var(--ok);font-weight:700">✓ حصلت عليه${b.at ? ' • ' + new Date(b.at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', { day: 'numeric', month: 'long' }) : ''}</p>`
+        : `<div class="pb" role="progressbar" aria-valuemin="0" aria-valuemax="${b.goal}" aria-valuenow="${Math.min(b.cur, b.goal)}"><span style="width:${Math.min(1, b.cur / b.goal) * 100}%"></span></div><p>${Math.min(b.cur, b.goal)} من ${b.goal}</p>`}</div>`).join('');
+    // التقدّم في كل مهارة: نقاط القوة وما يحتاج تدريبًا
+    const rows = skills.map((s) => {
+      const mine = qs.filter((q) => q.skill === s.id);
+      const ok = mine.filter((q) => p.solved[q.id]).length;
+      const tr = mine.filter((q) => p.tried[q.id] || p.solved[q.id]).length;
+      return { s, n: mine.length, ok, tr, acc: tr ? ok / tr : -1 };
+    });
+    const t2 = rows.filter((x) => x.tr >= 2).sort((a, b) => b.acc - a.acc);
+    const best = t2[0], weak = t2.length > 1 ? t2[t2.length - 1] : null;
+    $('review-box').innerHTML = (best ? `<p style="margin-top:0">💪 أقوى مهارة عندك: <strong>${esc(best.s.title)}</strong>${weak && weak !== best ? ` • 🎯 تحتاج تدريبًا أكثر: <strong>${esc(weak.s.title)}</strong> — <a href="lessons.html?id=${weak.s.id}">راجع الدرس</a>` : ''}</p>`
+      : '<p class="muted" style="margin-top:0">حلّ أسئلة من أكثر من مهارة، وسيظهر لك هنا أين أنت قوي وأين تحتاج تدريبًا.</p>') +
+      `<div class="grid grid-3">${rows.map((x) => `<a class="skill-card" href="bank.html?skill=${x.s.id}" style="align-items:center"><span class="ic">${x.s.icon}</span><div style="flex:1;min-width:0"><h3 style="font-size:.98rem">${esc(x.s.title)}</h3>
+        <div class="progress" role="progressbar" aria-valuenow="${x.ok}" aria-valuemin="0" aria-valuemax="${x.n}" style="height:9px"><span style="width:${x.n ? x.ok / x.n * 100 : 0}%"></span></div>
+        <p style="font-size:.82rem;margin-top:3px">${x.ok} من ${x.n} محلولة${x.tr ? ' • دقتك ' + Math.round(x.acc * 100) + '%' : ''}</p></div></a>`).join('')}</div>`;
+  } catch (e) { App.loadError($('badges'), e); }
+})();
+</script>
+</body>
+</html>

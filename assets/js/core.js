@@ -8,13 +8,19 @@
   const TYPES = { mcq: 'اختيار من متعدد', short: 'إجابة قصيرة', order: 'ترتيب', drag: 'سحب وإفلات', map: 'الضغط على الرسم' };
   const NAV = [
     ['index.html', 'الرئيسية'],
-    ['about.html', 'عن المسابقة'],
+    ['bank.html', 'التدريب'],
+    ['quizzes.html', 'المسابقات'],
+    ['challenges.html', 'التحديات الأسبوعية'],
+    ['leaderboard.html', 'الترتيب'],
+    ['achievements.html', 'الإنجازات'],
+  ];
+  // تحت «المزيد»
+  const NAV_MORE = [
     ['lessons.html', 'الدروس'],
     ['summaries.html', 'الملخصات'],
-    ['bank.html', 'بنك الأسئلة'],
-    ['quizzes.html', 'الاختبارات'],
     ['videos.html', 'الفيديوهات'],
     ['chat.html', 'المساعد الذكي'],
+    ['about.html', 'عن المسابقة'],
   ];
 
   const cache = {};
@@ -60,20 +66,37 @@
       p.quizzes = p.quizzes || {};
       p.tried = p.tried || {};
       p.days = p.days || {};
+      p.badges = p.badges || {};
+      // نشاط هذا الأسبوع (يبدأ الأسبوع يوم الأحد) — للمهام الأسبوعية
+      const wid = weekId();
+      if (!p.wk || p.wk.id !== wid) p.wk = { id: wid, tried: {}, solved: {}, hard: {}, lessons: {}, faster: 0 };
       return p;
     },
-    markLesson(id) { const p = progress.get(); p.lessons[id] = true; save(p); },
-    markSolved(qid) { const p = progress.get(); p.solved[qid] = true; p.tried[qid] = true; save(p); },
-    markTried(qid) { const p = progress.get(); p.tried[qid] = true; save(p); },
-    markDay() { const p = progress.get(); const d = new Date().toISOString().slice(0, 10); if (!p.days[d]) { p.days[d] = true; save(p); } },
-    saveQuiz(id, score, total) {
+    markLesson(id) { const p = progress.get(); p.lessons[id] = true; p.wk.lessons[id] = 1; save(p); },
+    markSolved(qid, q) {
+      const p = progress.get(); p.solved[qid] = true; p.tried[qid] = true;
+      p.wk.solved[qid] = 1; p.wk.tried[qid] = 1; if (q && q.difficulty === 'hard') p.wk.hard[qid] = 1;
+      save(p);
+    },
+    markTried(qid) { const p = progress.get(); p.tried[qid] = true; p.wk.tried[qid] = 1; save(p); },
+    markDay() { const p = progress.get(); const d = localDay(); if (!p.days[d]) { p.days[d] = true; save(p); } },
+    saveQuiz(id, score, total, seconds) {
       const p = progress.get();
       const prev = p.quizzes[id] || {};
-      p.quizzes[id] = { last: score, total, best: Math.max(score, prev.best || 0), date: new Date().toISOString().slice(0, 10) };
+      const t = Number(seconds) > 0 ? Math.round(seconds) : null;
+      // «حسّن وقتك»: نفس الاختبار، نتيجة لا تقل عن أفضل نتيجة سابقة، وبوقت أقل من أفضل وقت سابق
+      if (t && prev.bestTime && t < prev.bestTime && score >= (prev.best || 0)) p.wk.faster = 1;
+      p.quizzes[id] = { last: score, total, best: Math.max(score, prev.best || 0), date: localDay(),
+        time: t || prev.time || null, bestTime: t ? Math.min(t, prev.bestTime || t) : (prev.bestTime || null) };
       save(p);
     },
     reset() { try { localStorage.removeItem(KEY); } catch (e) { /* */ } },
   };
+
+  // ----- التواريخ (بتوقيت الجهاز) -----
+  function localDay(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function weekStart(d = new Date()) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - x.getDay()); return x; }
+  function weekId(d = new Date()) { return localDay(weekStart(d)); }
 
   // ----- الوضع الداكن/الفاتح -----
   function currentTheme() {
@@ -133,7 +156,7 @@
       const w = document.createElement('div');
       w.className = 'ask-overlay gate';
       w.innerHTML = `<form class="ask-box card gate-box" role="dialog" aria-modal="true" aria-labelledby="gate-t" novalidate>
-        <img class="gate-logo" src="assets/brand/logo-icon.svg" alt="" width="120" height="120">
+        <span class="gate-logo"><img class="logo-l" src="assets/brand/logo-icon.svg" alt="" width="120" height="120"><img class="logo-d" src="assets/brand/logo-icon-dark.svg" alt="" width="120" height="120"></span>
         <h2 id="gate-t">أهلًا بك في بيبراس تدريب موهبة 👋</h2>
         <p class="muted" style="margin-top:0">قبل البدء، عرّفنا بنفسك:</p>
         <div class="gate-roles" role="radiogroup" aria-label="أنا">
@@ -187,7 +210,7 @@
     if (!b) return;
     b.hidden = !u;
     if (u) {
-      b.querySelector('.acct-name').textContent = 'حسابي';
+      b.querySelector('.acct-name').textContent = words(u.name)[0] || 'حسابي';
       b.title = `${u.name}${u.grade ? ' • ' + GRADE_NAMES[u.grade] : u.role === 'teacher' ? ' • معلم' : ''}`;
     }
   }
@@ -286,9 +309,11 @@
       header.className = 'site-header';
       header.innerHTML = `
         <div class="wrap">
-          <a class="brand" href="index.html" aria-label="بيبراس تدريب موهبة — الرئيسية"><span class="logo" aria-hidden="true"><img src="assets/brand/logo-icon.svg" alt="" width="120" height="120"></span><span class="brand-div" aria-hidden="true"></span><span class="brand-word">بيبراس</span></a>
+          <a class="brand" href="index.html" aria-label="بيبراس تدريب موهبة — الرئيسية"><span class="logo" aria-hidden="true"><img class="logo-l" src="assets/brand/logo-icon.svg" alt="" width="120" height="120"><img class="logo-d" src="assets/brand/logo-icon-dark.svg" alt="" width="120" height="120"></span><span class="brand-div" aria-hidden="true"></span><span class="brand-word">بيبراس</span></a>
           <nav class="nav" id="nav" aria-label="القائمة الرئيسية">
             ${NAV.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}
+            <div class="more-wrap"><button class="nav-more${NAV_MORE.some(([h]) => h === page) ? ' active' : ''}" id="more-btn" type="button" aria-expanded="false" aria-controls="more-pop">المزيد ${ICONS.chev}</button>
+              <div class="more-pop" id="more-pop">${NAV_MORE.map(([href, label]) => `<a href="${href}" class="${href === page ? 'active' : ''}">${label}</a>`).join('')}</div></div>
           </nav>
           <div class="header-tools">
             <button class="user-btn admin-btn" id="admin-btn" type="button" hidden title="لوحة المشرف (مشاهدة)"><b aria-hidden="true">📊</b><span>لوحة المشرف</span></button>
@@ -301,6 +326,10 @@
         </div>`;
       document.getElementById('theme-btn').addEventListener('click', toggleTheme);
       setupBell();
+      const moreB = document.getElementById('more-btn');
+      const moreP = document.getElementById('more-pop');
+      moreB.addEventListener('click', (e) => { e.stopPropagation(); const o = moreP.classList.toggle('show'); moreB.setAttribute('aria-expanded', o); });
+      document.addEventListener('click', (e) => { if (!moreP.contains(e.target)) { moreP.classList.remove('show'); moreB.setAttribute('aria-expanded', 'false'); } });
       document.getElementById('admin-btn').addEventListener('click', openAdmin);
       document.getElementById('user-btn').addEventListener('click', () => {
         const u = getUser();
@@ -414,6 +443,117 @@
     });
   }
 
-  window.App = { user: getUser, log, LEVELS, GRADE_LEVELS, BOOK_PDF, DIFFS, TYPES, json, esc, fmt, param, progress, skills, skillMap, questions, loadError, shuffle, sortByDifficulty, printHTML, ask };
+
+  // =====================================================================
+  //  التحفيز: سلسلة الأيام، المهام الأسبوعية، الأوسمة، الترتيب
+  // =====================================================================
+  const GROUPS = [
+    { key: 'logic', name: 'المنطق', skills: ['logic', 'graphs', 'trees', 'abstraction'] },
+    { key: 'algo', name: 'الخوارزميات', skills: ['algorithms', 'loops', 'sorting', 'stackqueue'] },
+    { key: 'num', name: 'الأعداد والبيانات', skills: ['binary', 'data', 'patterns', 'optimization'] },
+  ];
+  function weekGroup() { return GROUPS[Math.floor(weekStart().getTime() / (7 * 864e5)) % GROUPS.length]; }
+  function streak(p) {
+    const has = (d) => !!p.days[localDay(d)];
+    const d = new Date(); if (!has(d)) d.setDate(d.getDate() - 1);
+    let n = 0; while (has(d) && n < 3650) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+  // الأيقونات (24×24)
+  const GI = {
+    star: '<path d="M12 3.2l2.7 5.5 6 .9-4.35 4.2 1 6L12 17l-5.35 2.8 1-6L3.3 9.6l6-.9z" fill="currentColor"/>',
+    bolt: '<path d="M13.2 2.5 5 13.6h6.2L10.3 21.5 19 10.2h-6.3z" fill="currentColor"/>',
+    puzzle: '<path d="M9.5 4.5h2.2a2.3 2.3 0 1 1 4.6 0h2.2v4.4a2.3 2.3 0 1 1 0 4.6v5H14a2.3 2.3 0 1 0-4.6 0H5v-5a2.3 2.3 0 1 0 0-4.6V4.5z" fill="currentColor"/>',
+    target: '<g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/></g><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    flame: '<path d="M12.3 2.2c.8 3.6 5.6 5.6 5.6 10.6a5.9 5.9 0 0 1-11.8 0c0-2.4 1.1-4.1 2.4-5.3 0 2.2 1 3.4 2.3 3.6-.3-3.1.2-6 1.5-8.9z" fill="currentColor"/>',
+    crown: '<path d="M3 8.2l4.6 3.9L12 5.5l4.4 6.6L21 8.2l-1.8 10.3H4.8z" fill="currentColor"/>',
+    book: '<path d="M3.5 5.5c3-1 5.8-.8 8.5 1 2.7-1.8 5.5-2 8.5-1v13c-3-1-5.8-.8-8.5 1-2.7-1.8-5.5-2-8.5-1z M12 6.5v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    cap: '<path d="M2.5 9 12 4.5 21.5 9 12 13.5z" fill="currentColor"/><path d="M6.5 11.3v4.4c3.3 2.6 7.7 2.6 11 0v-4.4M20 9.8v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    shield: '<path d="M12 2.5l8 3v6.2c0 4.9-3.4 8.4-8 9.8-4.6-1.4-8-4.9-8-9.8V5.5z" fill="currentColor"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none" stroke="#141238" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    trophy: '<path d="M7 3.5h10v5.2a5 5 0 0 1-10 0z" fill="currentColor"/><path d="M7 5.5H3.8a3.6 3.6 0 0 0 3.7 4.3M17 5.5h3.2a3.6 3.6 0 0 1-3.7 4.3M12 13.8v3.4M8 20.5h8M9.5 20.5l.8-3.3h3.4l.8 3.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    hundred: '<text x="12" y="16.2" text-anchor="middle" font-size="10.5" font-weight="800" font-family="system-ui,sans-serif" fill="currentColor">100</text>',
+    grid: '<g fill="currentColor"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6" opacity=".55"/></g>',
+    clock: '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4.3l2.8 1.8M9.5 2.5h5"/></g>',
+    layers: '<path d="m12 3 9 5-9 5-9-5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m3 12.5 9 5 9-5M3 16.5l9 5 9-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    check: '<circle cx="12" cy="12" r="10" fill="currentColor"/><path d="m7.5 12.3 3 3 6-6.3" fill="none" stroke="#0e1030" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  };
+  const BADGE_COLORS = { gold: ['#ffd86b', '#f29d0f'], purple: ['#b79bff', '#6d3fe6'], teal: ['#5ff0d8', '#13a7a0'], orange: ['#ffc15a', '#f0731c'], red: ['#ff9a6b', '#e2483d'], blue: ['#8fd0ff', '#3b7cf0'], pink: ['#ff9ee6', '#c63fd6'] };
+  function badgeSvg(b, size = 64) {
+    const [c1, c2] = b.earned ? BADGE_COLORS[b.color] : ['#4b4a7c', '#33325f'];
+    const id = 'hx' + b.id + (b.earned ? '' : 'l');
+    return `<svg class="hexb${b.earned ? '' : ' locked'}" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
+      <linearGradient id="${id}i" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2366"/><stop offset="1" stop-color="#141238"/></linearGradient></defs>
+      <path d="M32 3.5 56.5 17.7v28.6L32 60.5 7.5 46.3V17.7z" fill="url(#${id}i)" stroke="url(#${id})" stroke-width="4" stroke-linejoin="round"/>
+      <g transform="translate(18 18) scale(1.17)" style="color:${b.earned ? c1 : '#5d5b8f'}">${GI[b.icon]}</g></svg>`;
+  }
+  // المهام الأسبوعية الخمس
+  function weekTasks(p, qs) {
+    const g = weekGroup();
+    const inGroup = qs.filter((q) => g.skills.includes(q.skill)).map((q) => q.id);
+    const grpSolved = inGroup.filter((id) => p.wk.solved[id]).length;
+    const anyBest = Object.values(p.quizzes).some((r) => r.bestTime);
+    const T = [
+      { id: 'ten', title: 'حل 10 أسئلة متنوعة', icon: 'check', cur: Object.keys(p.wk.tried).length, goal: 10, href: 'bank.html' },
+      { id: 'hard', title: 'حل مسألة تحدٍّ', icon: 'check', cur: Object.keys(p.wk.hard).length, goal: 1, href: 'bank.html?difficulty=hard' },
+      { id: 'faster', title: 'حسّن وقتك في الحل', icon: 'clock', cur: p.wk.faster ? 1 : 0, goal: 1, href: 'quizzes.html', note: anyBest ? 'أعد اختبارًا سابقًا بنفس النتيجة أو أفضل وفي وقت أقل' : 'حل اختبارًا، ثم أعده في وقت أقل' },
+      { id: 'group', title: `أكمل مجموعة (${g.name})`, icon: 'layers', cur: grpSolved, goal: 10, href: `bank.html?skills=${g.skills.join(',')}&gname=${encodeURIComponent(g.name)}` },
+      { id: 'lesson', title: 'أكمل درسًا جديدًا', icon: 'book', cur: Object.keys(p.wk.lessons).length, goal: 1, href: 'lessons.html' },
+    ];
+    T.forEach((t) => { t.cur = Math.min(t.cur, t.goal); t.done = t.cur >= t.goal; });
+    return T;
+  }
+  // الأوسمة الـ12 وشروطها (من التقدّم المحفوظ في الجهاز)
+  function badges(p, qs, quizzes, skillList) {
+    const solved = Object.keys(p.solved).length;
+    const hardAll = qs.filter((q) => q.difficulty === 'hard' && p.solved[q.id]).length;
+    const lessons = Object.keys(p.lessons).length;
+    const st = streak(p);
+    const bestPct = Math.max(0, ...Object.values(p.quizzes).map((r) => (r.total ? r.best / r.total : 0)));
+    const sims = quizzes.filter((z) => z.sim && p.quizzes[z.id]).length;
+    const skillsHit = new Set(qs.filter((q) => p.solved[q.id]).map((q) => q.skill)).size;
+    const wt = weekTasks(p, qs); const wDone = wt.filter((t) => t.done).length;
+    const nSk = skillList.length || 12;
+    const L = [
+      { id: 'start', name: 'بداية قوية', desc: 'أول إجابة صحيحة', icon: 'star', color: 'gold', cur: solved, goal: 1 },
+      { id: 'persist', name: 'مُثابر', desc: 'تدرّب 3 أيام متتالية', icon: 'bolt', color: 'orange', cur: st, goal: 3 },
+      { id: 'puzzler', name: 'محلّ الألغاز', desc: 'حل 25 سؤالًا', icon: 'puzzle', color: 'teal', cur: solved, goal: 25 },
+      { id: 'accurate', name: 'دقّة الحل', desc: '90% أو أكثر في اختبار', icon: 'target', color: 'purple', cur: Math.round(bestPct * 100), goal: 90 },
+      { id: 'week7', name: 'سلسلة أسبوع', desc: 'تدرّب 7 أيام متتالية', icon: 'flame', color: 'red', cur: st, goal: 7 },
+      { id: 'hero', name: 'بطل الأسبوع', desc: 'أكمل كل المهام الأسبوعية', icon: 'crown', color: 'gold', cur: wDone, goal: wt.length },
+      { id: 'reader', name: 'قارئ نشيط', desc: 'أكمل 6 دروس', icon: 'book', color: 'blue', cur: lessons, goal: 6 },
+      { id: 'scholar', name: 'سيد الدروس', desc: `أكمل الدروس الـ${nSk}`, icon: 'cap', color: 'purple', cur: lessons, goal: nSk },
+      { id: 'brave', name: 'متحدٍّ', desc: 'حل 5 أسئلة صعبة', icon: 'shield', color: 'pink', cur: hardAll, goal: 5 },
+      { id: 'sim', name: 'محاكي المسابقة', desc: 'أكمل محاكاة المسابقة', icon: 'trophy', color: 'gold', cur: sims, goal: 1 },
+      { id: 'all', name: 'شامل', desc: 'حل سؤالًا من كل مهارة', icon: 'grid', color: 'teal', cur: skillsHit, goal: nSk },
+      { id: 'hundred', name: 'المئة', desc: 'حل 100 سؤال', icon: 'hundred', color: 'blue', cur: solved, goal: 100 },
+    ];
+    let changed = false;
+    L.forEach((b) => {
+      b.earned = b.cur >= b.goal;
+      if (b.earned && !p.badges[b.id]) { p.badges[b.id] = Date.now(); changed = true; b.isNew = true; }
+      b.at = p.badges[b.id] || 0;
+    });
+    if (changed) save(p);
+    return L;
+  }
+  function weekEnds() { const e = weekStart(); e.setDate(e.getDate() + 7); return e; }
+  // الترتيب من الخادم (يُحفظ دقيقة واحدة)
+  async function board(period = 'all') {
+    const u = getUser();
+    const k = 'bebras-board-' + period;
+    try { const c = JSON.parse(sessionStorage.getItem(k)); if (c && Date.now() - c.t < 60000 && c.uid === (u && u.id)) return c.d; } catch (e) { /* */ }
+    const c = await json('data/config.json');
+    const base = c.boardEndpoint || (c.chatEndpoint ? c.chatEndpoint.replace(/\/+$/, '') + '/board' : '');
+    if (!base) throw new Error('no_board');
+    const r = await fetch(`${base}?period=${period}${u ? '&uid=' + encodeURIComponent(u.id) : ''}`);
+    if (!r.ok) throw new Error('board ' + r.status);
+    const d = await r.json();
+    try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), uid: u && u.id, d })); } catch (e) { /* */ }
+    return d;
+  }
+  const game = { GROUPS, weekGroup, streak, badges, badgeSvg, weekTasks, weekEnds, board, GI, localDay };
+
+  window.App = { game, user: getUser, log, LEVELS, GRADE_LEVELS, BOOK_PDF, DIFFS, TYPES, json, esc, fmt, param, progress, skills, skillMap, questions, loadError, shuffle, sortByDifficulty, printHTML, ask };
   document.addEventListener('DOMContentLoaded', () => { shell(); ensureUser(); });
 })();
